@@ -1,0 +1,22 @@
+// Test 49
+
+struct Outil {
+    int poids, puissance;
+};
+
+struct Grue {
+    int hauteur, largeur;
+    struct Outil moteur;
+};
+
+struct Grue ma_machine, mon_engin, ma_plateforme;
+
+int main(void) {
+    int x;
+    int y;
+    ma_machine = mon_engin;
+    ma_machine.hauteur = y;
+    x = 10;
+    y = x + 5;
+    return 1;
+}

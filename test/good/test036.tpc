@@ -1,0 +1,12 @@
+// Test 36
+
+struct intStruct {
+    int n;
+};
+
+int main(void) {
+    struct intStruct a;
+    a.n = 10;
+
+    return 0;
+}

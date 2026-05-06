@@ -1,0 +1,18 @@
+// Test 39
+
+struct engine {
+    int power, size, cost;
+};
+
+struct aircraft {
+    int height, width;
+    char pilot;
+    struct engine motor;
+};
+
+int main(void) {
+    struct aircraft my_plane;
+    my_plane = alpha;
+
+    return 0;
+}

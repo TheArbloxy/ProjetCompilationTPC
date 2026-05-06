@@ -1,0 +1,15 @@
+// Test 29
+
+int a, b, c, d, e;
+
+int main(void) {
+    a = 10;
+    b = 3;
+
+    c = a * b;
+    d = b / a;
+    e = a % b;
+
+    return 0;
+
+}

@@ -1,0 +1,13 @@
+// Test 23
+
+int main(void) {
+    int a, b;
+    a = 10;
+    b = 3;
+
+    if (a <= b) {
+        return 0;
+    }
+
+    return 1;
+}

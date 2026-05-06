@@ -1,0 +1,6 @@
+// Test 67
+
+int main(void) {
+    int if, else, return;
+    return 0;
+}

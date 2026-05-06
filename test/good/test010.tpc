@@ -1,0 +1,29 @@
+// Test 10
+
+struct engine {
+    int power, size, cost;
+};
+
+/*
+Comment
+
+struct aircraft {
+    int height, width;
+    char pilot;
+    struct engine motor;
+};
+*/
+
+struct aircraft {
+    int height, width;
+    char pilot;
+    struct engine motor;
+};
+
+int main(void) {
+    struct aircraft a, b;
+    a.height = 10;
+    a.height = a.height + a.motor.power;
+
+    return 0;
+}

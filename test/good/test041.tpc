@@ -1,0 +1,30 @@
+// Test 41
+
+struct engine {
+    int power, size, cost;
+};
+
+struct aircraft {
+    int height, width;
+    char pilot;
+    struct engine motor;
+};
+
+struct aircraft new_aircraft(void) {
+    struct aircraft my_plane;
+
+    my_plane.height = 10;
+    my_plane.width = 5;
+    my_plane.pilot = antoine;
+    my_plane.motor = powerful;
+
+    return my_plane;
+}
+
+int main(void) {
+    struct aircraft my_plane, my_shuttle, my_satellite;
+    my_plane = new_aircraft();
+    my_shuttle = bravo;
+
+    return 0;
+}

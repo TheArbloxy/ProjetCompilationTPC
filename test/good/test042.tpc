@@ -1,0 +1,24 @@
+// Test 42
+
+struct engine {
+    int power, size, cost;
+};
+
+struct aircraft {
+    int height, width;
+    char pilot;
+    struct engine motor;
+};
+
+void super_aircraft(struct aircraft a) {
+    a.height = 15;
+    a.width = 10;
+}
+
+int main(void) {
+    struct aircraft my_plane, my_shuttle, my_satellite;
+    my_satellite = delta;
+    super_aircraft(delta);
+
+    return 0;
+}

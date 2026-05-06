@@ -1,0 +1,13 @@
+// Test 34
+
+int main(void) {
+    int a, b;
+    a = 3;
+    b = 4;
+
+    if (!(a == b)) {
+        return 0;
+    }
+
+    return 1;
+}

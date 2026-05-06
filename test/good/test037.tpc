@@ -1,0 +1,11 @@
+// Test 37
+
+int main(void) {
+    struct intStruct {
+        int n;
+    };
+    struct intStruct a;
+    a.n = 10;
+
+    return 0;
+}

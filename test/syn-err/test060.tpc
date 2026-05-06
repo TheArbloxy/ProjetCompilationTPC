@@ -1,0 +1,11 @@
+// Test 60
+
+int main(void) {
+    int a;
+    a = 10;
+    IF (a == 10) {
+        return 0;
+    } ELSE {
+        return 1;
+    }
+}

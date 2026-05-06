@@ -1,0 +1,5 @@
+// Test 59
+
+int main(void) {
+    RETURN 0;
+}

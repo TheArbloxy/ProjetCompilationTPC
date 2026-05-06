@@ -1,0 +1,9 @@
+// Test 81
+
+int main(void) {
+    return 0;
+}
+
+struct err {
+    int no;
+};

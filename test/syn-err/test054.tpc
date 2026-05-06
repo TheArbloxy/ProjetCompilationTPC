@@ -1,0 +1,6 @@
+// Test 54
+
+int main(void) {
+    char a = 'c';
+    return 0;
+}

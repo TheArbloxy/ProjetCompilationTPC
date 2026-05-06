@@ -1,0 +1,17 @@
+// Test 1
+
+
+void test(int y) {
+    char a;
+    a = 'a';
+    y = 4;
+}
+
+int main(void) {
+    int a;
+    int d;
+    // a = 5 * ((4 - 1) + (9 / 3));
+    a = 5;
+    d = 4 + 2;
+    return 0;
+}

@@ -1,0 +1,18 @@
+// Test 18
+
+int main(void) {
+    int a, b, c, d;
+    a = 5;
+    b = 3;
+    c = 5;
+
+    if ((a || b) && c) {
+        d = 7;
+    }
+
+    if (b != c) {
+        d = 55;
+    }
+
+    return 0;
+}

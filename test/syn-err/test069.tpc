@@ -1,0 +1,13 @@
+// Test 69
+
+add(int a, int b) {
+    return a + b;
+}
+
+
+int main(void) {
+    int a;
+    a = add(10, 5);
+    
+    return 0;
+}

@@ -1,0 +1,15 @@
+// Test 90
+
+struct engine {
+    int power, size, cost;
+};
+
+struct aircraft {
+    int height, width;
+    double pilot;
+    struct engine motor;
+};
+
+int main(void) {
+    return 0;
+}

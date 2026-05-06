@@ -1,0 +1,12 @@
+// Test 15
+
+int return_three(void) {
+    return 3;
+}
+
+int main(void) {
+    int a;
+    a = return_three() + return_three() + return_three() + return_three();
+
+    return 0;
+}

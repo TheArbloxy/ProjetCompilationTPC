@@ -1,0 +1,10 @@
+// Test 35
+
+void araujo(void) {
+    return 1;
+}
+
+int main(void) {
+    araujo();
+    return 0;
+}

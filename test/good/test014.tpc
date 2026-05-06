@@ -1,0 +1,13 @@
+// Test 14
+
+int global;
+
+void test_global(void) {
+    global = 10;
+}
+
+int main(void) {
+    global = 20;
+    test_global();
+    return 0;
+}
