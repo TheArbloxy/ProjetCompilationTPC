@@ -64,204 +64,148 @@ static void handleParams(Node *params, HashTable *table) {
     }
 }
 
-static Symbol* handleFieldAccess(Node *n, HashTable *table) {
+static Symbol handleEval(Node *n, HashTable *table) {
     /*
-    Handles a field access from the AST.
+    Handles evalutations from the AST, to the symbol tree.
     */
-    printf("LOOKUP FOR : %s\n", n->value.val_str);
-    Symbol *s = lookup(table, n->value.val_str);
-    if (!s) {
-        printf("Erreur ligne %d : paramètre %s non déclaré\n",
-            n->lineno, n->value.val_str);
-        return NULL;
-    }
-    return s;
-}
-
-static Symbol* handleBinaryOperations(Node *n, HashTable *table) {
-    /*
-    Handles all binary operations (+, -, *, /, %)
-    */
-    Node *firstOperande = n->firstChild;
-    Node *operator = firstOperande->nextSibling;
-    Node *secondOperande = operator->nextSibling;
-
-    Symbol *s1 = NULL;
-    Symbol *s2 = NULL;
-    Symbol *result = NULL;
-
-    // Récupérer le premier & second opérande
-    switch (firstOperande->label) {
-        case fieldAccess:
-            s1 = handleFieldAccess(firstOperande, table);
-            break;
-        /*
-        case id:
-            // Accès direct TODO : fix seg fault
-            switch (firstOperande->typ) {
-                case VALUE_INT:
-                    s1->typ = SYM_INT;
-                    s1->Value.value_int = firstOperande->value.val_int;
-                    break;
-                case VALUE_CHAR:
-                    s1->typ = SYM_CHAR;
-                    s1->Value.value_int = firstOperande->value.val_char;
-                    break;
-                default:
-                    break;
-            }
-            break;
-        */
-        default:
-            break;
+    if (!n) {
+        return makeIntSymbol(0);
     }
 
-    switch (secondOperande->label) {
-        case fieldAccess:
-            s2 = handleFieldAccess(secondOperande, table);
-            break;
-        /*
-        case id:
-            // Accès direct TODO : fix seg fault
-            switch (firstOperande->typ) {
-                case VALUE_INT:
-                    s2->typ = SYM_INT;
-                    s2->Value.value_int = firstOperande->value.val_int;
-                    break;
-                case VALUE_CHAR:
-                    s2->typ = SYM_CHAR;
-                    s2->Value.value_int = firstOperande->value.val_char;
-                    break;
-                default:
-                    break;
-            }
-            break;
-        */
-        default:
-            break;
-    }
-
-    // Appliquer l'opérateur
-    if (s1 && s2)  {
-        result->typ = SYM_INT; // TEMPORARY
-        switch (operator->label) {
-            case add:
-                result->Value.value_int = s1->Value.value_int + s2->Value.value_int;
-                break;
-            case sub:
-                result->Value.value_int = s1->Value.value_int - s2->Value.value_int;
-                break;
-            case mul:
-                result->Value.value_int = s1->Value.value_int * s2->Value.value_int;
-                break;
-            case divstar:
-                result->Value.value_int = s1->Value.value_int / s2->Value.value_int;
-                break;
-            case mod:
-                result->Value.value_int = s1->Value.value_int % s2->Value.value_int;
-                break;
-            default:
-                break;
+    switch (n->label) {
+        // Char constants
+        case character:
+            return makeCharSymbol(n->value.val_char);
+        // Int constants
+        case id: {
+            return makeIntSymbol(n->value.val_int);
         }
-    }
+        // Opérations binaires
+        case Exp:
+        case TB:
+        case FB:
+        case M:
+        case E:
+        case T: {
 
-    
-    printf("FIRST OPERANDE : %s\n", firstOperande ? strToLabel(firstOperande->label) : "null"); // TEST
-    printf("OPERATOR : %s\n", operator ? strToLabel(operator->label) : "null"); // TEST
-    printf("SECOND OPERANDE : %s\n", secondOperande ? strToLabel(secondOperande->label) : "null"); // TEST
-    
+            Node *left = n->firstChild;
+            Node *op = left->nextSibling;
+            Node *right = op->nextSibling;
 
-    return result;
-}
+            Symbol s1 = handleEval(left, table);
+            Symbol s2 = handleEval(right, table);
 
-static void handleAssign(Node *n, HashTable *table) {
-    /*
-    Handles an assign instruction from the AST, to the symbol tree.
-    */
-    Node *access = n->firstChild; // Access
-    Node *accessIdent = access->firstChild; // LValue
-    Node *ident = access->nextSibling; // RValue
+            Symbol result;
+            result.typ = SYM_INT;
 
-    Symbol *s;
-    Symbol *sExp;
+            switch (op->label) {
 
-    // printf("ACCESS TYPE : %s\n", access ? strToLabel(access->label) : "null"); // TEST
-    // printf("IDENT TYPE : %s\n", ident ? strToLabel(ident->label) : "null"); // TEST
-
-    switch (access->label) {
-        case fieldAccess:
-            // Vérifier que la variable de base existe (Gestion LValue)
-            s = handleFieldAccess(accessIdent, table);
-
-            // Vérifier l'expression (Gestion RValue)
-            if (!ident) return;
-            printf("ACCESS TYPE : %s\n", ident ? strToLabel(ident->label) : "null"); // TEST
-
-            Node *accessExp;
-            int fieldExpMod = 0; // Flag qui vérifie si l'expression est une variable qui existe
-
-            switch (ident->label) {
-                case fieldAccess: // Si l'expression est une variable qui existe déjà
-                    accessExp = ident->firstChild;
-                    sExp = handleFieldAccess(accessExp, table);
-                    if (sExp) fieldExpMod = 1;
+                case add:
+                    result.Value.value_int =
+                        s1.Value.value_int +
+                        s2.Value.value_int;
                     break;
-                case E: // Si l'expression est une addition ou soustraction
-                case T: // Si l'expression est une multiplication, divison ou modulo
-                    sExp = handleBinaryOperations(ident, table);
-                    if (sExp) fieldExpMod = 1;
+
+                case sub:
+                    result.Value.value_int =
+                        s1.Value.value_int -
+                        s2.Value.value_int;
                     break;
+
+                case mul:
+                    result.Value.value_int =
+                        s1.Value.value_int *
+                        s2.Value.value_int;
+                    break;
+
+                case divstar:
+                    result.Value.value_int =
+                        s1.Value.value_int /
+                        s2.Value.value_int;
+                    break;
+
+                case mod:
+                    result.Value.value_int =
+                        s1.Value.value_int %
+                        s2.Value.value_int;
+                    break;
+
+                case equals:
+                    result.Value.value_int =
+                        (s1.Value.value_int ==
+                         s2.Value.value_int);
+                    break;
+
+                case notEquals:
+                    result.Value.value_int =
+                        (s1.Value.value_int !=
+                         s2.Value.value_int);
+                    break;
+
+                case orderInf:
+                    result.Value.value_int =
+                        (s1.Value.value_int <
+                         s2.Value.value_int);
+                    break;
+
+                case orderSup:
+                    result.Value.value_int =
+                        (s1.Value.value_int >
+                         s2.Value.value_int);
+                    break;
+
+                case andExp:
+                    result.Value.value_int =
+                        (s1.Value.value_int &&
+                         s2.Value.value_int);
+                    break;
+
+                case orExp:
+                    result.Value.value_int =
+                        (s1.Value.value_int ||
+                         s2.Value.value_int);
+                    break;
+
                 default:
+                    printf("Operateur inconnu\n");
                     break;
             }
-            
-            if (fieldExpMod) {
-                switch(sExp->typ) {
-                    case VALUE_INT:
-                        ident->typ = VALUE_INT;
-                        ident->value.val_int = sExp->Value.value_int;
-                        break;
-                    case VALUE_CHAR:
-                        ident->typ = VALUE_CHAR;
-                        ident->value.val_char = sExp->Value.value_char;
-                        break;
-                    default:
-                        break;
-                }
-            }
-            
-            // Affectation selon le type de la variable
-            switch (ident->typ) {
-                case VALUE_INT:
-                    printf("MODIFY INT : %d\n", ident->value.val_int);
-                    if (s->typ == SYM_CHAR) { // Si on modifie un char avec un int, on provoque un avertissement, et reste non initialisée
-                        printf("Avertissement ligne %d : tentative de conversion du paramètre %s avec un int\n",
-                            accessIdent->lineno, accessIdent->value.val_str);
-                    } else {
-                        s->Value.value_int = ident->value.val_int;
-                    }
-                    break;
-                case VALUE_CHAR:
-                    printf("MODIFY CHAR : %c\n", ident->value.val_char);
-                    if (s->typ == SYM_INT) { // Si on modifie un int avec un char, on effectue la conversion
-                        s->Value.value_int = ident->value.val_char;
-                    } else {
-                        s->Value.value_char = ident->value.val_char;
-                    }
-                    break;
-                default:
-                    break;
 
+
+            return result;
+        }
+        // Opérations unaires
+        case unaryminus: {
+            Symbol s = handleEval(n->firstChild, table);
+            s.Value.value_int = -s.Value.value_int;
+            return s;
+        }
+        case unaryplus:
+            return handleEval(n->firstChild, table);
+        case notInstr: {
+            Symbol s = handleEval(n->firstChild, table);
+            s.Value.value_int = !s.Value.value_int;
+            return s;
+        }
+        // Accès à un champ
+        case fieldAccess: {
+            Node *idNode = n->firstChild;
+            Symbol *s = lookup(table, idNode->value.val_str);
+            if (!s) {
+                printf("Erreur ligne %d : paramètre %s déjà déclaré\n",
+                       idNode->lineno ,idNode->value.val_str);
+
+                return makeIntSymbol(0);
             }
-            
-            // Modifier la valeur dans la table
-            if (!lookupModify(table, accessIdent->value.val_str, s)) {
-                printf("Erreur ligne %d : paramètre %s non déclaré\n",
-                    accessIdent->lineno, accessIdent->value.val_str);
-            }
+            printf("SYMBOL : %d\n", s->Value.value_int ? s->Value.value_int : -999);
+            return *s;
+        }
 
         default:
-            break;
+            printf("Label non géré : %s\n",
+                   strToLabel(n->label));
+
+            return makeIntSymbol(0);
     }
 }
 
@@ -280,7 +224,7 @@ static void handleFunction(Node *n, HashTable *table) {
     Node *functType = signature->firstChild; // Function type
     Node *functName = functType->nextSibling; // Function name
 
-    // printf("LABEL TYPE : %s\n", functType ? strToLabel(functType->label) : "null"); // TEST
+    printf("LABEL TYPE : %s\n", functType ? strToLabel(functType->label) : "null"); // TEST
 
     // Check function type
     switch (functType->label) {
@@ -309,8 +253,8 @@ static void handleFunction(Node *n, HashTable *table) {
     Node *declVars = corpse->firstChild;
     Node *suiteInstr = declVars->nextSibling;
 
-    // printf("LABEL DECL : %s\n", strToLabel(declVars->label)); // TEST
-    // printf("LABEL SUITE : %s\n", strToLabel(suiteInstr->label)); // TEST
+    printf("LABEL DECL : %s\n", strToLabel(declVars->label)); // TEST
+    printf("LABEL SUITE : %s\n", strToLabel(suiteInstr->label)); // TEST
 
     // Déclarations de variables dans la fonction
     if (declVars) {
@@ -319,8 +263,40 @@ static void handleFunction(Node *n, HashTable *table) {
     // Suite des instructions dans la fonction (assign)
     if (suiteInstr) {
         for (Node *instr = suiteInstr->firstChild; instr; instr = instr->nextSibling) {
-            if (instr->label == assign) {
-                handleAssign(instr, n->symTable);
+            switch (instr->label) {
+                case assign: {
+                    Node *lhs = instr->firstChild;
+                    Node *rhs = lhs->nextSibling;
+                    
+                    // Récupérer la valeur de l'expression
+                    Symbol value = handleEval(rhs, n->symTable);
+                    Node *variableName = lhs->firstChild;
+
+                    // Récupérer variable destination
+                    Symbol *dest = lookup(n->symTable, variableName->value.val_str);
+                    if (!dest) {
+                        printf("Erreur ligne %d : paramètre %s non déclaré\n",
+                            instr->lineno, variableName->value.val_str);
+                        break;
+                    }
+
+                    // Vérification type
+                    if (!castCheck(value.typ, dest->typ)) {
+                        printf("Avertissement ligne %d : conversion interdite de paramètre %s (int -> char)\n",
+                            instr->lineno, variableName->value.val_str);
+                        break;
+                    }
+
+                    Symbol finalValue = castSymbol(value, dest->typ);
+                    // Modifier la valeur dans la table
+                    if (!lookupModify(n->symTable, variableName->value.val_str, finalValue)) {
+                        printf("Erreur ligne %d : modification du paramètre %s échoué\n",
+                            instr->lineno, variableName->value.val_str);
+                    }
+                    break;
+                }
+                default:
+                    break;
             }
         }
     }

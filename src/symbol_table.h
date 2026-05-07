@@ -37,11 +37,16 @@ typedef struct HashTable {
     struct HashTable *parent;
 } HashTable;
 
+Symbol makeIntSymbol(int v);
+Symbol makeCharSymbol(char c);
+int castCheck(TypeValue src, TypeValue dest);
+Symbol castSymbol(Symbol src, TypeValue dest);
+
 void initHashTable(HashTable* h, HashTable* global);
 int insert(HashTable *h, const char* key, Symbol symbol);
 Symbol* lookup(HashTable *h, const char* key);
 Symbol* search(HashTable *h, const char* key);
-int lookupModify(HashTable *h, const char* key, Symbol* newSymbol);
+int lookupModify(HashTable *h, const char* key, Symbol newSymbol);
 int deleteH(HashTable *h, const char* key);
 void freeHashTable(HashTable *h);
 void printHashTable(HashTable *h);

@@ -10,6 +10,8 @@ static const char *StringFromLabel[] = {
   /* To avoid listing them twice, see https://stackoverflow.com/a/10966395 */
 };
 
+// HELPERS //
+
 static unsigned int hash(const char* str) {
     int k = 612;
     int N = 1008;
@@ -23,6 +25,61 @@ static unsigned int hash(const char* str) {
     return (h % (int)pow(2, 30)) % N;
 }
 
+extern Symbol makeIntSymbol(int v) {
+    /*
+    Handles a direct access to an int constant.
+    */
+    Symbol s;
+    s.typ = SYM_INT;
+    s.Value.value_int = v;
+    return s;
+}
+
+extern Symbol makeCharSymbol(char c) {
+    /*
+    Handles a direct access to a char constant.
+    */
+    Symbol s;
+    s.typ = SYM_CHAR;
+    s.Value.value_char = c;
+    return s;
+}
+
+extern int castCheck(TypeValue src, TypeValue dest) {
+    /*
+    Checks if a cast is allowed (char -> int).
+    However, (int -> char) isn't allowed by our compiler.
+    */
+    return (src == dest) || (src == SYM_CHAR && dest == SYM_INT);
+} 
+
+extern Symbol castSymbol(Symbol src, TypeValue dest) {
+    /*
+    Handles a symbol cast.
+    */
+    Symbol result;
+    result.typ = dest;
+
+    switch (dest) {
+        case SYM_INT:
+            // Cast from a char to an int
+            if (src.typ == SYM_CHAR) {
+                result.Value.value_int = (int)src.Value.value_char;
+            } else {
+                result.Value.value_int = src.Value.value_int;
+            }
+            break;
+        case SYM_CHAR:
+            result.Value.value_char = src.Value.value_char;
+            break;
+        default:
+            break;
+    }
+    return result;
+}
+
+// MAIN //
+
 void initHashTable(HashTable* h, HashTable* global) {
     for (int i = 0; i < TABLE_SIZE; i++) {
         h->table[i].key = NULL;
@@ -33,6 +90,7 @@ void initHashTable(HashTable* h, HashTable* global) {
 
 int insert(HashTable *h, const char* key, Symbol symbol) {
     unsigned int index = hash(key);
+    
 
     // Sondage linéaire
     for (int i = 0; i < TABLE_SIZE; i++) {
@@ -43,7 +101,7 @@ int insert(HashTable *h, const char* key, Symbol symbol) {
             h->table[pos].symbol = symbol;
             h->table[pos].state = OCCUPIED;
 
-            printf("INSERTED : %s\n", h->table[pos].key);
+            // printf("INSERTED : %s\n", h->table[pos].key);
             return 1;
         // Déjà dans la hash map
         } else {
@@ -61,10 +119,6 @@ Symbol* search(HashTable *h, const char* key) {
 
     for (int i = 0; i < TABLE_SIZE; i++) {
         unsigned int pos = (index + i) % TABLE_SIZE;
-
-        if (h->table[pos].state == OCCUPIED) {
-            printf("FOUND : %s\n", h->table[pos].key);
-        }
 
         // SI trouvé
         if (h->table[pos].state == OCCUPIED 
@@ -87,7 +141,7 @@ Symbol* lookup(HashTable *h, const char* key) {
     return NULL;
 }
 
-static int modify(HashTable *h, const char* key, Symbol* newSymbol) {
+static int modify(HashTable *h, const char* key, Symbol newSymbol) {
     unsigned int index = hash(key);
 
     // Sondage linéaire
@@ -97,8 +151,7 @@ static int modify(HashTable *h, const char* key, Symbol* newSymbol) {
         if (h->table[pos].state == OCCUPIED 
             && h->table[pos].key != NULL
             && strcmp(h->table[pos].key, key) == 0) {
-            h->table[pos].symbol = *newSymbol;
-            printf("NEW SYMBOL : %d\n", h->table[pos].symbol.Value.value_int);
+            h->table[pos].symbol = newSymbol;
             return 1;
         }
     }
@@ -106,7 +159,7 @@ static int modify(HashTable *h, const char* key, Symbol* newSymbol) {
     return 0;
 }
 
-int lookupModify(HashTable *h, const char* key, Symbol* newSymbol) {
+int lookupModify(HashTable *h, const char* key, Symbol newSymbol) {
     for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
         if (modify(tmp, key, newSymbol)) {
             return 1;
