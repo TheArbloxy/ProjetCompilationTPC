@@ -8,7 +8,9 @@ typedef enum {
     SYM_NONE,
     SYM_INT,
     SYM_CHAR,
-    SYM_STRING
+    SYM_STRING,
+    SYM_BUILTIN,
+    SYM_FUNCTION
 } TypeValue;
 
 typedef enum {
@@ -24,6 +26,7 @@ typedef struct {
         char value_char;
         char* value_str;
     } Value;
+    // int address;
 } Symbol;
 
 typedef struct {
@@ -41,6 +44,8 @@ Symbol makeIntSymbol(int v);
 Symbol makeCharSymbol(char c);
 int castCheck(TypeValue src, TypeValue dest);
 Symbol castSymbol(Symbol src, TypeValue dest);
+int sizeofType(TypeValue t);
+int isGlobalScope(HashTable* h);
 
 void initHashTable(HashTable* h, HashTable* global);
 int insert(HashTable *h, const char* key, Symbol symbol);
@@ -50,5 +55,6 @@ int lookupModify(HashTable *h, const char* key, Symbol newSymbol);
 int deleteH(HashTable *h, const char* key);
 void freeHashTable(HashTable *h);
 void printHashTable(HashTable *h);
+void addBuiltIns(HashTable *global);
 
 #endif

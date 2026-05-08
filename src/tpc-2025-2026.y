@@ -406,6 +406,7 @@ int main(int argc, char **argv) {
         /* Initiates and builds the symbol table */
         HashTable *global = malloc(sizeof(HashTable));
         initHashTable(global, NULL);
+        addBuiltIns(global);
         buildSymbolTables(node, global);
 
         if (symtabs) {

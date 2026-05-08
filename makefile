@@ -37,6 +37,15 @@ OBJS = \
 CC = gcc
 CFLAGS = -Wall -g -I$(SRC) -I$(OBJ)
 
+# NASM + édition de liens
+ASM_RUNTIME = $(SRC)/runtime.asm
+ASM_PROGRAM = _anonymous.asm
+
+ASM_RUNTIME_OBJ = $(OBJ)/runtime.o
+ASM_PROGRAM_OBJ = $(OBJ)/_anonymous.o
+
+ASM_EXEC = bin/prog
+
 # Règle par défaut
 all: $(BIN) $(OBJ) $(EXEC)
 
@@ -46,7 +55,7 @@ $(BIN) $(OBJ):
 
 # Édition de liens
 $(EXEC): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ -lfl
+	$(CC) $(CFLAGS) -o $@ $^ -ll
 
 # Compilation des .c en .o
 $(OBJ)/%.o: $(OBJ)/%.c
@@ -72,8 +81,20 @@ $(YACC_C) $(YACC_H): $(YACC)
 $(LEX_C): $(LEX) $(YACC_H)
 	flex -o $@ $<
 
+run: $(ASM_EXEC)
+
+$(ASM_EXEC): $(ASM_RUNTIME_OBJ) $(ASM_PROGRAM_OBJ)
+	gcc $(ASM_RUNTIME_OBJ) $(ASM_PROGRAM_OBJ) -o $(ASM_EXEC)
+
+$(ASM_RUNTIME_OBJ): $(ASM_RUNTIME)
+	nasm -f elf64 $(ASM_RUNTIME) -o $(ASM_RUNTIME_OBJ)
+
+$(ASM_PROGRAM_OBJ): $(ASM_PROGRAM)
+	nasm -f elf64 $(ASM_PROGRAM) -o $(ASM_PROGRAM_OBJ)
+
 # Nettoyage
 clean:
 	rm -f $(LEX_C) $(YACC_C) $(YACC_H) $(OBJS) $(EXEC)
+	rm -f $(ASM_RUNTIME_OBJ) $(ASM_PROGRAM_OBJ) $(ASM_EXEC)
 
 .PHONY: all clean

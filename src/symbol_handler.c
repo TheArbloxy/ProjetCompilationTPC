@@ -2,6 +2,8 @@
 #include "symbol_table.h"
 #include "tree.h"
 
+static int globalAddress = 0;
+
 static void handleDeclVars(Node *declVars, HashTable *table) {
     /*
     Handles variable declarations from the AST, to the symbol table.
@@ -26,7 +28,14 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
                 default:
                     s.typ = SYM_NONE;
             }
-            
+            /*
+            if (isGlobalScope(table)) {
+                s.address = globalAddress;
+                globalAddress += sizeofType(s.typ);
+            } else {
+                s.address = -1;
+            }
+            */
             if (!insert(table, id->value.val_str, s)) {
                 printf("Erreur ligne %d : variable %s déjà déclarée\n",
                        id->lineno, id->value.val_str);
@@ -56,7 +65,14 @@ static void handleParams(Node *params, HashTable *table) {
             s.typ = SYM_CHAR;
         else
             s.typ = SYM_NONE;
-
+        /*
+        if (isGlobalScope(table)) {
+            s.address = globalAddress;
+            globalAddress += sizeofType(s.typ);
+        } else {
+            s.address = -1;
+        }
+        */
         if (!insert(table, idNode->value.val_str, s)) {
             printf("Erreur ligne %d : paramètre %s déjà déclaré\n",
                    idNode->lineno, idNode->value.val_str);
@@ -213,10 +229,6 @@ static void handleFunction(Node *n, HashTable *table) {
     /*
     Handles a function from the AST, to the symbol tree.
     */
-    // Creates local symbol table for the function
-    n->symTable = malloc(sizeof(HashTable));
-    initHashTable(n->symTable, table);
-
     Symbol f;
     Node *signature = n->firstChild; // Function's signature
     Node *corpse    = signature->nextSibling; // Function's corpse
@@ -226,21 +238,27 @@ static void handleFunction(Node *n, HashTable *table) {
 
     printf("LABEL TYPE : %s\n", functType ? strToLabel(functType->label) : "null"); // TEST
 
-    // Check function type
-    switch (functType->label) {
-        case typeInt:
-            f.typ = SYM_INT;
-            f.Value.value_int = -67; // placeholder value
-            break;
-        case typeChar:
-            f.typ = SYM_CHAR;
-            f.Value.value_char = 'b'; // placeholder value
-            break;
-        default:
-            f.typ = SYM_NONE; // VOID return
-            break;
-
+    // Check first if the function is a refedinition
+    if (lookup(table, functName->value.val_str)) {
+        printf("Erreur ligne %d : fonction %s déjà définie\n",
+            n->lineno, functName->value.val_str);
+        return;
     }
+
+    // Creates local symbol table for the function
+    n->symTable = malloc(sizeof(HashTable));
+    initHashTable(n->symTable, table);
+
+    // Check function type
+    f.typ = SYM_FUNCTION;
+    /*
+    if (isGlobalScope(table)) {
+        f.address = globalAddress;
+        globalAddress += sizeofType(f.typ);
+    } else {
+        f.address = -1;
+    }
+    */
     insert(table, functName->value.val_str, f);
 
     // Function parameters

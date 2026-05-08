@@ -2,15 +2,15 @@
 
 
 void test(int y) {
-    char a;
-    a = 'b';
-    y = 4;
+    // char a;
+    // a = 'b';
+    // y = 4;
 }
 
 int main(void) {
-    int a;
+    // int a;
     int b;
-    a = 5 * ((4 - 1) + (9 / 3));
-    b = 'I';
+    // a = 5 * ((4 - 1) + (9 / 3));
+    b = 6-3;
     return 0;
 }

@@ -4,7 +4,7 @@
 #include "symbol_table.h"
 
 static const char *StringFromLabel[] = {
-  "Void", "Int", "Char", "String"
+  "Void", "Int", "Char", "String", "Built-in Function", "Function"
   /* list all other node labels, if any */
   /* The list must coincide with the label_t enum in tree.h */
   /* To avoid listing them twice, see https://stackoverflow.com/a/10966395 */
@@ -78,6 +78,21 @@ extern Symbol castSymbol(Symbol src, TypeValue dest) {
     return result;
 }
 
+extern int sizeofType(TypeValue t) {
+    switch (t) {
+        case SYM_INT:
+            return 4;
+        case SYM_CHAR:
+            return 1;
+        default:
+            return 4;
+    }
+}
+
+extern int isGlobalScope(HashTable* h) {
+    return !(h->parent);
+}
+
 // MAIN //
 
 void initHashTable(HashTable* h, HashTable* global) {
@@ -90,7 +105,6 @@ void initHashTable(HashTable* h, HashTable* global) {
 
 int insert(HashTable *h, const char* key, Symbol symbol) {
     unsigned int index = hash(key);
-    
 
     // Sondage linéaire
     for (int i = 0; i < TABLE_SIZE; i++) {
@@ -214,6 +228,7 @@ void printHashTable(HashTable *h) {
                     default:
                         break;
                 }
+                // printf("| ADDRESS = (%d)", e->symbol.address);
                 printf("\n");
                 break;
         }
@@ -235,4 +250,15 @@ void freeHashTable(HashTable *h) {
         }
     }
     free(h);
+}
+
+extern void addBuiltIns(HashTable *global) {
+    Symbol s;
+    s.typ = SYM_BUILTIN;
+    // s.address = 0;
+
+    insert(global, "putchar", s);
+    insert(global, "putint", s);
+    insert(global, "getchar", s);
+    insert(global, "getint", s);
 }
