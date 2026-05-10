@@ -404,7 +404,7 @@ int main(int argc, char **argv) {
         }
         
         /* Initiates and builds the symbol table */
-        HashTable *global = malloc(sizeof(HashTable));
+        HashTable *global = calloc(1, sizeof(HashTable));
         initHashTable(global, NULL);
         addBuiltIns(global);
         buildSymbolTables(node, global);

@@ -29,9 +29,11 @@ extern Symbol makeIntSymbol(int v) {
     /*
     Handles a direct access to an int constant.
     */
-    Symbol s;
+    Symbol s = {0};
     s.typ = SYM_INT;
     s.Value.value_int = v;
+    s.address = -1;
+    s.isGlobal = 0;
     return s;
 }
 
@@ -39,42 +41,49 @@ extern Symbol makeCharSymbol(char c) {
     /*
     Handles a direct access to a char constant.
     */
-    Symbol s;
+    Symbol s = {0};
     s.typ = SYM_CHAR;
     s.Value.value_char = c;
+    s.address = -1;
+    s.isGlobal = 0;
     return s;
 }
 
-extern int castCheck(TypeValue src, TypeValue dest) {
+extern int castCheck(TypeValue LValue, TypeValue RValue) {
     /*
     Checks if a cast is allowed (char -> int).
     However, (int -> char) isn't allowed by our compiler.
     */
-    return (src == dest) || (src == SYM_CHAR && dest == SYM_INT);
+    return (LValue == RValue) || (LValue == SYM_INT && RValue == SYM_CHAR);
 } 
 
-extern Symbol castSymbol(Symbol src, TypeValue dest) {
+extern Symbol castSymbol(Symbol LValue, Symbol RValue) {
     /*
     Handles a symbol cast.
     */
-    Symbol result;
-    result.typ = dest;
+    Symbol result = {0};
+    result.typ = LValue.typ;
 
-    switch (dest) {
+    switch (LValue.typ) {
         case SYM_INT:
             // Cast from a char to an int
-            if (src.typ == SYM_CHAR) {
-                result.Value.value_int = (int)src.Value.value_char;
+            if (RValue.typ == SYM_CHAR) {
+                result.Value.value_int = (int)RValue.Value.value_char;
             } else {
-                result.Value.value_int = src.Value.value_int;
+                result.Value.value_int = RValue.Value.value_int;
             }
             break;
         case SYM_CHAR:
-            result.Value.value_char = src.Value.value_char;
+            result.Value.value_char = RValue.Value.value_char;
             break;
         default:
             break;
     }
+
+    // Gets the address and the global variable flag from the src to the result.
+    result.address = LValue.address;
+    result.isGlobal = LValue.isGlobal;
+
     return result;
 }
 
@@ -125,7 +134,7 @@ int insert(HashTable *h, const char* key, Symbol symbol) {
         }
     }
     // Table pleine
-    return 1;
+    return 0;
 }
 
 Symbol* search(HashTable *h, const char* key) {
@@ -228,7 +237,8 @@ void printHashTable(HashTable *h) {
                     default:
                         break;
                 }
-                // printf("| ADDRESS = (%d)", e->symbol.address);
+                printf("| ADDRESS = (%d) ", e->symbol.address);
+                printf("| IS GLOBAL = %s", e->symbol.isGlobal ? "true" : "false");
                 printf("\n");
                 break;
         }
@@ -253,9 +263,10 @@ void freeHashTable(HashTable *h) {
 }
 
 extern void addBuiltIns(HashTable *global) {
-    Symbol s;
+    Symbol s = {0};
     s.typ = SYM_BUILTIN;
-    // s.address = 0;
+    s.address = -1;
+    s.isGlobal = 1;
 
     insert(global, "putchar", s);
     insert(global, "putint", s);

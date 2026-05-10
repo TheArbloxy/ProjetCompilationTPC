@@ -26,7 +26,8 @@ typedef struct {
         char value_char;
         char* value_str;
     } Value;
-    // int address;
+    int address;
+    int isGlobal;
 } Symbol;
 
 typedef struct {
@@ -42,8 +43,8 @@ typedef struct HashTable {
 
 Symbol makeIntSymbol(int v);
 Symbol makeCharSymbol(char c);
-int castCheck(TypeValue src, TypeValue dest);
-Symbol castSymbol(Symbol src, TypeValue dest);
+int castCheck(TypeValue LValue, TypeValue RValue);
+Symbol castSymbol(Symbol LValue, Symbol RValue);
 int sizeofType(TypeValue t);
 int isGlobalScope(HashTable* h);
 

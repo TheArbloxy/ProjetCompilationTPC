@@ -14,7 +14,7 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
         Node *ids = typeNode->nextSibling;
 
         for (Node *id = ids->firstChild; id; id = id->nextSibling) {
-            Symbol s;
+            Symbol s = {0};
             
             switch (typeNode->label) {
                 case typeInt:
@@ -28,17 +28,18 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
                 default:
                     s.typ = SYM_NONE;
             }
-            /*
             if (isGlobalScope(table)) {
                 s.address = globalAddress;
+                s.isGlobal = 1;
                 globalAddress += sizeofType(s.typ);
             } else {
                 s.address = -1;
+                s.isGlobal = 0;
             }
-            */
             if (!insert(table, id->value.val_str, s)) {
                 printf("Erreur ligne %d : variable %s déjà déclarée\n",
                        id->lineno, id->value.val_str);
+                globalAddress -= sizeofType(s.typ);
             }
         }
     }
@@ -57,7 +58,7 @@ static void handleParams(Node *params, HashTable *table) {
         Node *typeNode = param->firstChild;
         Node *idNode   = typeNode->nextSibling;
 
-        Symbol s;
+        Symbol s = {0};
 
         if (typeNode->label == typeInt)
             s.typ = SYM_INT;
@@ -65,17 +66,19 @@ static void handleParams(Node *params, HashTable *table) {
             s.typ = SYM_CHAR;
         else
             s.typ = SYM_NONE;
-        /*
+
         if (isGlobalScope(table)) {
             s.address = globalAddress;
+            s.isGlobal = 1;
             globalAddress += sizeofType(s.typ);
         } else {
             s.address = -1;
+            s.isGlobal = 0;
         }
-        */
         if (!insert(table, idNode->value.val_str, s)) {
             printf("Erreur ligne %d : paramètre %s déjà déclaré\n",
                    idNode->lineno, idNode->value.val_str);
+            globalAddress -= sizeofType(s.typ);
         }
     }
 }
@@ -111,7 +114,7 @@ static Symbol handleEval(Node *n, HashTable *table) {
             Symbol s1 = handleEval(left, table);
             Symbol s2 = handleEval(right, table);
 
-            Symbol result;
+            Symbol result = {0};
             result.typ = SYM_INT;
 
             switch (op->label) {
@@ -229,7 +232,7 @@ static void handleFunction(Node *n, HashTable *table) {
     /*
     Handles a function from the AST, to the symbol tree.
     */
-    Symbol f;
+    Symbol f = {0};
     Node *signature = n->firstChild; // Function's signature
     Node *corpse    = signature->nextSibling; // Function's corpse
 
@@ -246,19 +249,13 @@ static void handleFunction(Node *n, HashTable *table) {
     }
 
     // Creates local symbol table for the function
-    n->symTable = malloc(sizeof(HashTable));
+    n->symTable = calloc(1, sizeof(HashTable));
     initHashTable(n->symTable, table);
 
     // Check function type
     f.typ = SYM_FUNCTION;
-    /*
-    if (isGlobalScope(table)) {
-        f.address = globalAddress;
-        globalAddress += sizeofType(f.typ);
-    } else {
-        f.address = -1;
-    }
-    */
+    f.address = -1;
+    f.isGlobal = 1;
     insert(table, functName->value.val_str, f);
 
     // Function parameters
@@ -291,21 +288,21 @@ static void handleFunction(Node *n, HashTable *table) {
                     Node *variableName = lhs->firstChild;
 
                     // Récupérer variable destination
-                    Symbol *dest = lookup(n->symTable, variableName->value.val_str);
-                    if (!dest) {
+                    Symbol *varDest = lookup(n->symTable, variableName->value.val_str);
+                    if (!varDest) {
                         printf("Erreur ligne %d : paramètre %s non déclaré\n",
                             instr->lineno, variableName->value.val_str);
                         break;
                     }
 
                     // Vérification type
-                    if (!castCheck(value.typ, dest->typ)) {
+                    if (!castCheck(varDest->typ, value.typ)) {
                         printf("Avertissement ligne %d : conversion interdite de paramètre %s (int -> char)\n",
                             instr->lineno, variableName->value.val_str);
                         break;
                     }
 
-                    Symbol finalValue = castSymbol(value, dest->typ);
+                    Symbol finalValue = castSymbol(*varDest, value);
                     // Modifier la valeur dans la table
                     if (!lookupModify(n->symTable, variableName->value.val_str, finalValue)) {
                         printf("Erreur ligne %d : modification du paramètre %s échoué\n",
