@@ -5,6 +5,7 @@
 #include <string.h>
 #include "tree.h"
 #include "symbol_table.h"
+#include "helpers.h"
 
 void parcoursArbre(Node *node, FILE *f);
 

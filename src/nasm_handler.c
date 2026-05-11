@@ -1,6 +1,9 @@
 #include "nasm_handler.h"
 
 void genExp(Node *node, FILE *f) {
+    /*
+    Generates expression handling in NASM.
+    */
     if (!node) return;
 
     switch (node->label) {
@@ -16,8 +19,27 @@ void genExp(Node *node, FILE *f) {
             }
             break;
 
-        // cas des additions et soustractions
-        case E: {
+        // cas des accès à une variable
+        case fieldAccess: {
+            Node *idNode = node->firstChild;
+
+            if (!idNode) {
+                printf("Erreur : fieldAccess vide\n");
+                return;
+            }
+
+            fprintf(f, "    mov eax, [%s]\n", idNode->value.val_str);
+            fprintf(f, "    push rax\n");
+            break;
+        }
+
+        // Opérations binaires
+        case Exp:
+        case TB:
+        case FB:
+        case M:
+        case E:
+        case T: {
             Node *left = node->firstChild;
             Node *op   = left ? left->nextSibling : NULL;
             Node *right= op ? op->nextSibling : NULL;
@@ -31,14 +53,35 @@ void genExp(Node *node, FILE *f) {
             genExp(right, f);
 
             fprintf(f, "    pop rbx\n"); // droite
-            fprintf(f, "    pop rsi\n"); // gauche
+            fprintf(f, "    pop rax\n"); // gauche
 
-            if (op->label == add)
-                fprintf(f, "    add rsi, rbx\n");
-            else if (op->label == sub)
-                fprintf(f, "    sub rsi, rbx\n");
-
-            fprintf(f, "    push rsi\n");
+            switch (op->label) {
+                case add: 
+                    fprintf(f, "    add rax, rbx\n");
+                    fprintf(f, "    push rax\n");
+                    break;
+                case sub:
+                    fprintf(f, "    sub rax, rbx\n");
+                    fprintf(f, "    push rax\n");
+                    break;
+                case mul:
+                    fprintf(f, "    imul rax, rbx\n");
+                    fprintf(f, "    push rax\n");
+                    break;
+                case divstar:
+                    fprintf(f, "    cqo\n");
+                    fprintf(f, "    idiv rbx\n");
+                    fprintf(f, "    push rax\n");
+                    break;
+                case mod:
+                    fprintf(f, "    cqo\n");
+                    fprintf(f, "    idiv rbx\n");
+                    fprintf(f, "    push rdx\n");
+                    break;
+                default:
+                    printf("Operateur inconnu\n");
+                    break;
+            }
             break;
         }
 
@@ -52,15 +95,49 @@ void genExp(Node *node, FILE *f) {
 }
 
 void genInstr(Node *node, FILE *f) {
+    /*
+    Generates instructions in NASM.
+    */
     if (!node) return;
 
-    if (node->label == assign) {
-        Node *expr = node->firstChild->nextSibling;
+    switch (node->label) {
+        case assign: {
+            Node *var = node->firstChild;
+            Node *expr = var->nextSibling;
 
-        genExp(expr, f);
+            genExp(expr, f);
 
-        // résultat au sommet de la pile
-        fprintf(f, "    pop rsi\n");
+            // résultat au sommet de la pile
+            fprintf(f, "    pop rsi\n");
+
+            if (var->label == fieldAccess) {
+                Node *idNode = var->firstChild;
+                fprintf(f, "    mov [%s], esi\n", idNode->value.val_str);
+            } 
+            break;
+        }
+        case appelFonct: {
+            Node *func = node->firstChild;
+            Node *args = func ? func->nextSibling : NULL;
+
+            if (!func) return;
+
+            // Générer arguments
+            if (args && args->firstChild) {
+                Node *arg = args->firstChild;
+                genExp(arg, f);
+                fprintf(f, "    pop rdi\n");
+            }
+
+            // Fonctions builtin (putchar et putint) TODO : ajouter getchar et getint
+            if (strcmp(func->value.val_str, "putchar") == 0) {
+                fprintf(f, "    call my_putchar\n");
+            } else if (strcmp(func->value.val_str, "putint") == 0) {
+                fprintf(f, "    call my_putint\n");
+            }
+        }
+        default:
+            break;
     }
 
     // parcourir récursivement
@@ -69,7 +146,40 @@ void genInstr(Node *node, FILE *f) {
     }
 }
 
+void genGlobalVariables(HashTable* h, FILE *f) {
+    /*
+    Generates global variables handling in NASM/
+    */
+    if (!h) return;
+
+    fprintf(f, "section .bss\n");
+
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        HashEntry *entry = &h->table[i];
+        if (entry->state == OCCUPIED) {
+            Symbol *s = &entry->symbol;
+
+            // ignorer fonctions
+            switch (s->typ) {
+                case SYM_BUILTIN:
+                case SYM_FUNCTION:
+                case SYM_NONE:
+                case SYM_STRING:
+                    break;
+                case SYM_INT:
+                case SYM_CHAR:
+                    fprintf(f, "    %s: %s 1\n", entry->key, getReserveDirective(s->typ));
+            }
+        }
+    }
+
+    fprintf(f, "\n");
+}
+
 int isMainFunction(Node *node) {
+    /*
+    Checks if the node is the main function.
+    */
     Node *header = node->firstChild;
     if (!header) return 0;
 
@@ -83,20 +193,39 @@ int isMainFunction(Node *node) {
     return 0;
 }
 
-void parcoursArbre(Node *node, FILE *f) {
-    if (!node) return;
+void parcoursArbre(Node *n, FILE *f) {
+    /*
+    Start of the NASM compile progress.
+    */
 
-    if (node->label == declFonct) {
-        if (isMainFunction(node)) {
-            fprintf(f, "global _start\nsection .text\n_start:\n");
-            Node *corps = node->firstChild->nextSibling;
-            genInstr(corps, f);
+    if (!n) return;
+    // printf("LABEL N : %s\n", n ? strToLabel(n->label) : "null");
 
-            fprintf(f, "    mov rax, 60\n    mov rdi, 0\n    syscall");
-        }
-    }
+    Node *declVars      = n->firstChild;
+    Node *declFunctions = declVars->nextSibling;
 
-    for (Node *child = node->firstChild; child != NULL; child = child->nextSibling) {
-        parcoursArbre(child, f);
+    switch (n->label) {
+        // Global variables
+        case prog:
+            genGlobalVariables(n->symTable, f);
+        // Functions
+        case declFoncts:
+            for (Node *declFonct = declFunctions->firstChild; declFonct; declFonct = declFonct->nextSibling) {
+                if (isMainFunction(declFonct)) {
+                    fprintf(f, "global _start\n\n"
+                                "section .text\n");
+                    fprintf(f, "extern my_getchar\n"
+                                "extern my_putchar\n"
+                                "extern my_getint\n"
+                                "extern my_putint\n");
+                    fprintf(f, "\n_start:\n");
+                    Node *corps = declFonct->firstChild->nextSibling;
+                    genInstr(corps, f);
+
+                    fprintf(f, "    mov rax, 60\n    mov rdi, 0\n    syscall");
+                }
+            }
+        default:
+            break;
     }
 }

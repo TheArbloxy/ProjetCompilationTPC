@@ -41,13 +41,6 @@ typedef struct HashTable {
     struct HashTable *parent;
 } HashTable;
 
-Symbol makeIntSymbol(int v);
-Symbol makeCharSymbol(char c);
-int castCheck(TypeValue LValue, TypeValue RValue);
-Symbol castSymbol(Symbol LValue, Symbol RValue);
-int sizeofType(TypeValue t);
-int isGlobalScope(HashTable* h);
-
 void initHashTable(HashTable* h, HashTable* global);
 int insert(HashTable *h, const char* key, Symbol symbol);
 Symbol* lookup(HashTable *h, const char* key);

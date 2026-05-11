@@ -14,6 +14,8 @@ TREE_H = $(SRC)/tree.h
 
 SYMB_C = $(SRC)/symbol_table.c
 SYMB_H = $(SRC)/symbol_table.h
+HELPERS_C = $(SRC)/helpers.c
+HELPERS_H = $(SRC)/helpers.h
 SHANDLER_C = $(SRC)/symbol_handler.c
 SHANDLER_H = $(SRC)/symbol_handler.h
 NASM_HANDLER_C = $(SRC)/nasm_handler.c
@@ -30,6 +32,7 @@ OBJS = \
 	$(OBJ)/lex.yy.o \
 	$(OBJ)/tree.o \
 	$(OBJ)/symbol_table.o \
+	$(OBJ)/helpers.o \
 	$(OBJ)/symbol_handler.o \
 	$(OBJ)/nasm_handler.o
 
@@ -67,6 +70,9 @@ $(OBJ)/tree.o: $(TREE_C) $(TREE_H)
 $(OBJ)/symbol_table.o: $(SYMB_C) $(SYMB_H)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(OBJ)/helpers.o: $(HELPERS_C) $(HELPERS_C)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(OBJ)/symbol_handler.o: $(SHANDLER_C) $(SHANDLER_H)
 	$(CC) $(CFLAGS) -c $< -o $@
 
@@ -81,6 +87,8 @@ $(YACC_C) $(YACC_H): $(YACC)
 $(LEX_C): $(LEX) $(YACC_H)
 	flex -o $@ $<
 
+
+# Fichiers .asm
 run: $(ASM_EXEC)
 
 $(ASM_EXEC): $(ASM_RUNTIME_OBJ) $(ASM_PROGRAM_OBJ)
@@ -91,6 +99,7 @@ $(ASM_RUNTIME_OBJ): $(ASM_RUNTIME)
 
 $(ASM_PROGRAM_OBJ): $(ASM_PROGRAM)
 	nasm -f elf64 $(ASM_PROGRAM) -o $(ASM_PROGRAM_OBJ)
+
 
 # Nettoyage
 clean:

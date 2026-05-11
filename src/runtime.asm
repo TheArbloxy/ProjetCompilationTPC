@@ -29,7 +29,7 @@ my_putchar:
 
     ; write (stdout, buffer, 1)
     mov rax, 1
-    mov rsi, 1
+    mov rdi, 1
     mov rsi, buffer
     mov rdx, 1
     syscall 
@@ -55,7 +55,7 @@ my_getint:
     jl .error
 
     cmp al, '9'
-    jl .error
+    jg .error
 
 .loop:
     ; result = result * 10
@@ -96,26 +96,26 @@ my_getint:
     syscall
 
 my_putint:
+
     push rbx
     push r12
 
-    mov rax, rdi ; nombre à afficher
-    xor r12, r12 ; compteur de chiffres
+    mov rax, rdi
+    xor r12, r12
 
-    ; gérér négatif
+    ; négatif
     cmp rax, 0
-    jge .convert
+    jge .check_zero
 
     neg rax
 
     mov dil, '-'
     call my_putchar
 
-.convert:
-    mov rbx, 10
+.check_zero:
 
     cmp rax, 0
-    jne .convert
+    jne .extract
 
     mov dil, '0'
     call my_putchar
@@ -123,16 +123,21 @@ my_putint:
 
 .extract:
 
+    mov rbx, 10
+
+.loop:
+
     xor rdx, rdx
-    div rbx ; quotient -> rax, reste -> rdx
+    div rbx
 
     push rdx
     inc r12
 
     cmp rax, 0
-    jne .extract
+    jne .loop
 
 .print:
+
     pop rdx
 
     add dl, '0'
@@ -143,7 +148,9 @@ my_putint:
     dec r12
     jnz .print
 
-.done
+.done:
+
     pop r12
     pop rbx
+
     ret

@@ -1,16 +1,12 @@
 // Test 1
 
 int a;
-
-void test(int y) {
-    char a;
-    a = 'b';
-    y = 'B';
-}
+int b;
 
 int main(void) {
-    int b;
     a = 5 * ((4 - 1) + (9 / 3));
     b = 6-3;
+    putint(a);
+    // putint(b);
     return 0;
 }

@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include "tree.h"
 #include "symbol_table.h"
+#include "helpers.h"
 
 void buildSymbolTables(Node *n, HashTable *table);
 void printAllTables(Node *n);
