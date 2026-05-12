@@ -26,7 +26,20 @@ IDENT [a-zA-Z_][a-zA-Z0-9_]*
 "void"                        return VOID;
 "struct"                      return STRUCT;
 
-\'([^\\\']|\\.)\'             { yylval.byte = yytext[1]; return CHARACTER; }
+\'([^\\\']|\\[ntr\'\\])\'     { 
+    if (yytext[1] == '\\') {
+        switch (yytext[2]) {
+            case 'n': yylval.byte = '\n'; break;
+            case 't': yylval.byte = '\t'; break;
+            case 'r': yylval.byte = '\r'; break;
+            case '\\': yylval.byte = '\\'; break;
+            case '\'': yylval.byte = '\''; break;
+        }
+    } else {
+        yylval.byte = yytext[1];
+    }
+    return CHARACTER; 
+}
 "+"                           { yylval.byte = '+'; return ADDSUB; }
 "-"                           { yylval.byte = '-'; return ADDSUB; }
 "*"                           { yylval.byte = '*'; return DIVSTAR; }

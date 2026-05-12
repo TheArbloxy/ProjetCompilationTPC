@@ -1,5 +1,11 @@
 #include "nasm_handler.h"
 
+static int labelCounter = -1;
+
+int newLabel() {
+    return labelCounter++;
+}
+
 void genExp(Node *node, FILE *f) {
     /*
     Generates expression handling in NASM.
@@ -7,7 +13,7 @@ void genExp(Node *node, FILE *f) {
     if (!node) return;
 
     switch (node->label) {
-        // constante
+        // constante (int)
         case id:
             switch(node->typ) {
                 // int
@@ -17,6 +23,11 @@ void genExp(Node *node, FILE *f) {
                 default:
                     break;
             }
+            break;
+
+        // constante (char)
+        case character:
+            fprintf(f, "    push %d\n", node->value.val_char);
             break;
 
         // cas des accès à une variable
@@ -85,6 +96,24 @@ void genExp(Node *node, FILE *f) {
             break;
         }
 
+        // Appel fonction
+        case appelFonct: {
+            Node *functionName = node->firstChild;
+            // Node *args = functionName->nextSibling;
+
+            if (!functionName) return;
+
+            // Fonctions builtin (getchar et getint)
+            if (strcmp(functionName->value.val_str, "getchar") == 0) {
+                fprintf(f, "    call my_getchar\n");
+                fprintf(f, "    push rax\n");
+            } else if (strcmp(functionName->value.val_str, "getint") == 0) {
+                fprintf(f, "    call my_getint\n");
+                fprintf(f, "    push rax\n");
+            }
+            break;
+        }
+
         default:
             // fallback
             for (Node *child = node->firstChild; child; child = child->nextSibling) {
@@ -92,6 +121,56 @@ void genExp(Node *node, FILE *f) {
             }
             break;
     }
+}
+
+void genAssign(Node *node, FILE *f) {
+    /*
+    Generates assigns in NASM.
+    */
+    if (!node) return;
+
+    Node *var = node->firstChild;
+    Node *expr = var->nextSibling;
+
+    // Gérer expression
+    genExp(expr, f);
+    // résultat au sommet de la pile
+    fprintf(f, "    pop rsi\n");
+
+    if (var->label == fieldAccess) {
+        Node *idNode = var->firstChild;
+        fprintf(f, "    mov [%s], esi\n", idNode->value.val_str);
+    } 
+}
+
+void genFunctCall(Node *node, FILE *f) {
+    /*
+    Generates function calls in NASM.
+    */
+    Node *functionName = node->firstChild;
+    Node *args = functionName->nextSibling;
+
+    if (!functionName) return;
+
+    // Générer arguments
+    if (args && args->firstChild) {
+        Node *arg = args->firstChild;
+        genExp(arg, f);
+        fprintf(f, "    pop rdi\n");
+    }
+
+    // Fonctions builtin (putchar et putint)
+    if (strcmp(functionName->value.val_str, "putchar") == 0) {
+        fprintf(f, "    call my_putchar\n");
+    } else if (strcmp(functionName->value.val_str, "putint") == 0) {
+        fprintf(f, "    call my_putint\n");
+    }
+}
+
+void genIf(Node *node, FILE *f) {
+    /*
+    Generates an if instruction in NASM.
+    */
 }
 
 void genInstr(Node *node, FILE *f) {
@@ -102,39 +181,31 @@ void genInstr(Node *node, FILE *f) {
 
     switch (node->label) {
         case assign: {
-            Node *var = node->firstChild;
-            Node *expr = var->nextSibling;
-
-            genExp(expr, f);
-
-            // résultat au sommet de la pile
-            fprintf(f, "    pop rsi\n");
-
-            if (var->label == fieldAccess) {
-                Node *idNode = var->firstChild;
-                fprintf(f, "    mov [%s], esi\n", idNode->value.val_str);
-            } 
+            genAssign(node, f);
             break;
         }
         case appelFonct: {
-            Node *func = node->firstChild;
-            Node *args = func ? func->nextSibling : NULL;
+            genFunctCall(node, f);
+            break;
+        }
+        case ifSt: {
+            // TODO : fix ça
+            Node *cond = node->firstChild;
+            Node *suiteInstr = cond->nextSibling;
 
-            if (!func) return;
+            labelCounter++;
+            int labelEnd = newLabel();
 
-            // Générer arguments
-            if (args && args->firstChild) {
-                Node *arg = args->firstChild;
-                genExp(arg, f);
-                fprintf(f, "    pop rdi\n");
-            }
+            genExp(cond, f);
+            fprintf(f, "    pop rax\n");
 
-            // Fonctions builtin (putchar et putint) TODO : ajouter getchar et getint
-            if (strcmp(func->value.val_str, "putchar") == 0) {
-                fprintf(f, "    call my_putchar\n");
-            } else if (strcmp(func->value.val_str, "putint") == 0) {
-                fprintf(f, "    call my_putint\n");
-            }
+            fprintf(f, "    cmp rax, 0\n");
+            fprintf(f, "    je .L%d\n", labelEnd);
+
+            genInstr(suiteInstr, f);
+
+            fprintf(f, ".L%d:\n", labelEnd);
+            break;
         }
         default:
             break;
@@ -212,8 +283,7 @@ void parcoursArbre(Node *n, FILE *f) {
         case declFoncts:
             for (Node *declFonct = declFunctions->firstChild; declFonct; declFonct = declFonct->nextSibling) {
                 if (isMainFunction(declFonct)) {
-                    fprintf(f, "global _start\n\n"
-                                "section .text\n");
+                    fprintf(f, "global _start\n\nsection .text\n");
                     fprintf(f, "extern my_getchar\n"
                                 "extern my_putchar\n"
                                 "extern my_getint\n"

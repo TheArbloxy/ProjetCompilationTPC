@@ -1,7 +1,7 @@
 import subprocess
 import os
 
-EXE_DIR = ["./bin/tpcas"]
+EXE_DIR = ["./bin/tpcc"]
 GOOD_FILES_DIR = "./test/good/"
 ERROR_FILES_DIR = "./test/syn-err/"
 

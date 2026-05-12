@@ -31,7 +31,7 @@ extern int castCheck(TypeValue LValue, TypeValue RValue) {
     Checks if a cast is allowed (char -> int).
     However, (int -> char) isn't allowed by our compiler.
     */
-    return (LValue == RValue) || (LValue == SYM_INT && RValue == SYM_CHAR);
+    return !(LValue == SYM_CHAR && RValue == SYM_INT);
 } 
 
 extern Symbol castSymbol(Symbol LValue, Symbol RValue) {

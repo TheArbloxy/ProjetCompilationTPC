@@ -211,12 +211,25 @@ static Symbol handleEval(Node *n, HashTable *table) {
             Node *idNode = n->firstChild;
             Symbol *s = lookup(table, idNode->value.val_str);
             if (!s) {
-                printf("Erreur ligne %d : paramètre %s déjà déclaré\n",
+                printf("Erreur ligne %d : paramètre %s non déclaré\n",
                        idNode->lineno ,idNode->value.val_str);
 
                 return makeIntSymbol(0);
             }
             printf("SYMBOL : %d\n", s->Value.value_int ? s->Value.value_int : -999);
+            return *s;
+        }
+        // Appel fonction
+        case appelFonct: {
+            Node *functionName = n->firstChild;
+            Symbol *s = lookup(table, functionName->value.val_str);
+            if (!s) {
+                printf("Erreur ligne %d : fonction %s non déclaré\n",
+                       functionName->lineno ,functionName->value.val_str);
+
+                return makeIntSymbol(0);
+            }
+            printf("FUNCTION\n");
             return *s;
         }
 

@@ -1,0 +1,13 @@
+int x;
+int y;
+
+int main(void) {
+    x = 0;
+    y = 2;
+    if (x) {
+        y = 44;
+    }
+    putint(y);
+    putchar('\n');
+    return 0;
+}

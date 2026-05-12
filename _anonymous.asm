@@ -1,6 +1,6 @@
 section .bss
-    a: resd 1
-    b: resd 1
+    x: resd 1
+    y: resd 1
 
 global _start
 
@@ -11,42 +11,31 @@ extern my_getint
 extern my_putint
 
 _start:
-    push 5
-    push 4
-    push 1
-    pop rbx
-    pop rax
-    sub rax, rbx
-    push rax
-    push 9
-    push 3
-    pop rbx
-    pop rax
-    cqo
-    idiv rbx
-    push rax
-    pop rbx
-    pop rax
-    add rax, rbx
-    push rax
-    pop rbx
-    pop rax
-    imul rax, rbx
-    push rax
+    push 0
     pop rsi
-    mov [a], esi
-    push 6
-    push 3
-    pop rbx
-    pop rax
-    sub rax, rbx
-    push rax
+    mov [x], esi
+    push 2
     pop rsi
-    mov [b], esi
-    mov eax, [a]
+    mov [y], esi
+    mov eax, [x]
+    push rax
+    pop rax
+    cmp rax, 0
+    je .L0
+    push 44
+    pop rsi
+    mov [y], esi
+.L0:
+    push 44
+    pop rsi
+    mov [y], esi
+    mov eax, [y]
     push rax
     pop rdi
     call my_putint
+    push 10
+    pop rdi
+    call my_putchar
     mov rax, 60
     mov rdi, 0
     syscall
