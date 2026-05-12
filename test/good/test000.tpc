@@ -2,10 +2,12 @@ int x;
 int y;
 
 int main(void) {
-    x = 0;
+    x = 1;
     y = 2;
     if (x) {
-        y = 44;
+        y = 3;
+    } else {
+        y = 6;
     }
     putint(y);
     putchar('\n');

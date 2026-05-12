@@ -11,7 +11,7 @@ extern my_getint
 extern my_putint
 
 _start:
-    push 0
+    push 1
     pop rsi
     mov [x], esi
     push 2
@@ -21,14 +21,16 @@ _start:
     push rax
     pop rax
     cmp rax, 0
-    je .L0
-    push 44
+    je .Lelse_0
+    push 3
     pop rsi
     mov [y], esi
-.L0:
-    push 44
+    jmp .Lendif_0
+.Lelse_0:
+    push 6
     pop rsi
     mov [y], esi
+.Lendif_0:
     mov eax, [y]
     push rax
     pop rdi

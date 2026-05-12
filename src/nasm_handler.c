@@ -1,10 +1,6 @@
 #include "nasm_handler.h"
 
-static int labelCounter = -1;
-
-int newLabel() {
-    return labelCounter++;
-}
+static int labelCounter = 0;
 
 void genExp(Node *node, FILE *f) {
     /*
@@ -167,53 +163,73 @@ void genFunctCall(Node *node, FILE *f) {
     }
 }
 
-void genIf(Node *node, FILE *f) {
-    /*
-    Generates an if instruction in NASM.
-    */
-}
-
 void genInstr(Node *node, FILE *f) {
     /*
     Generates instructions in NASM.
     */
     if (!node) return;
 
-    switch (node->label) {
-        case assign: {
-            genAssign(node, f);
-            break;
-        }
-        case appelFonct: {
-            genFunctCall(node, f);
-            break;
-        }
-        case ifSt: {
-            // TODO : fix ça
-            Node *cond = node->firstChild;
-            Node *suiteInstr = cond->nextSibling;
-
-            labelCounter++;
-            int labelEnd = newLabel();
-
-            genExp(cond, f);
-            fprintf(f, "    pop rax\n");
-
-            fprintf(f, "    cmp rax, 0\n");
-            fprintf(f, "    je .L%d\n", labelEnd);
-
-            genInstr(suiteInstr, f);
-
-            fprintf(f, ".L%d:\n", labelEnd);
-            break;
-        }
-        default:
-            break;
-    }
-
-    // parcourir récursivement
     for (Node *child = node->firstChild; child; child = child->nextSibling) {
-        genInstr(child, f);
+        switch (child->label) {
+            case assign: {
+                genAssign(child, f);
+                break;
+            }
+            case appelFonct: {
+                genFunctCall(child, f);
+                break;
+            }
+            case ifSt: {
+                Node *cond = child->firstChild;
+                Node *suiteInstr = cond->nextSibling;
+
+                int labelEnd = labelCounter;
+                labelCounter++;
+
+                // Test de comparaison
+                genExp(cond, f);
+                fprintf(f, "    pop rax\n");
+
+                fprintf(f, "    cmp rax, 0\n");
+                fprintf(f, "    je .L%d\n", labelEnd);
+                
+                // Instructions si le if passe
+                genInstr(suiteInstr, f);
+                
+                // Sinon, on fait un jump après
+                fprintf(f, ".L%d:\n", labelEnd);
+                break;
+            }
+            case elseSt: {
+                Node *cond = child->firstChild;
+                Node *thenInstr = cond->nextSibling;
+                Node *elseInstr = thenInstr->nextSibling;
+
+                int labelEnd = labelCounter;
+                labelCounter++;
+
+                // Test de comparaison
+                genExp(cond, f);
+                fprintf(f, "    pop rax\n");
+
+                fprintf(f, "    cmp rax, 0\n");
+                fprintf(f, "    je .Lelse_%d\n", labelEnd);
+
+                // Instructions si le if passe, on jump le else
+                genInstr(thenInstr, f);
+                fprintf(f, "    jmp .Lendif_%d\n", labelEnd);
+
+                // Instructions du else
+                fprintf(f, ".Lelse_%d:\n", labelEnd);
+                genInstr(elseInstr, f);
+
+                // Fin
+                fprintf(f, ".Lendif_%d:\n", labelEnd);
+                break;
+            }
+            default:
+                break;
+        }
     }
 }
 
@@ -290,7 +306,7 @@ void parcoursArbre(Node *n, FILE *f) {
                                 "extern my_putint\n");
                     fprintf(f, "\n_start:\n");
                     Node *corps = declFonct->firstChild->nextSibling;
-                    genInstr(corps, f);
+                    genInstr(corps->firstChild->nextSibling, f);
 
                     fprintf(f, "    mov rax, 60\n    mov rdi, 0\n    syscall");
                 }
