@@ -4,10 +4,7 @@
 #include "symbol_table.h"
 
 static const char *StringFromLabel[] = {
-  "Void", "Int", "Char", "String", "Built-in Function", "Function"
-  /* list all other node labels, if any */
-  /* The list must coincide with the label_t enum in tree.h */
-  /* To avoid listing them twice, see https://stackoverflow.com/a/10966395 */
+  "Void", "Int", "Char", "String", "Built-in", "Function"
 };
 
 static unsigned int hash(const char* str) {
@@ -25,7 +22,8 @@ static unsigned int hash(const char* str) {
 
 // MAIN //
 
-void initHashTable(HashTable* h, HashTable* global) {
+void initHashTable(HashTable* h, HashTable* global, const char* name) {
+    h->functionName = strdup(name);
     for (int i = 0; i < TABLE_SIZE; i++) {
         h->table[i].key = NULL;
         h->table[i].state = EMPTY;
@@ -133,41 +131,46 @@ int deleteH(HashTable *h, const char* key) {
 }
 
 void printHashTable(HashTable *h) {
+    int isEmpty = 1; // Flag checking if the table is empty
+
     for (int i = 0; i < TABLE_SIZE; i++) {
         HashEntry *e = &h->table[i];
         switch(e->state) {
             case EMPTY:
-                // printf("EMPTY\n");
-                break;
             case DELETED:
-                // printf("DELETED\n");
                 break;
             default:
-                printf("KEY = %s | TYPE = %s ", e->key, StringFromLabel[e->symbol.typ]);
+                printf("KEY = %-20s | TYPE = %-8s ", e->key, StringFromLabel[e->symbol.typ]);
+                printf("| %-6s ", e->symbol.isGlobal ? "Global" : "Local");
+                printf("| ADDRESS = %-3d ", e->symbol.address);
 
                 switch(e->symbol.typ) {
                     case SYM_INT:
-                        printf("| VALUE = (%d) ", e->symbol.Value.value_int);
+                        printf("| VALUE = %-3d ", e->symbol.Value.value_int);
                         break;
                     case SYM_CHAR:
-                        printf("| VALUE = (%c) ", e->symbol.Value.value_char);
+                        printf("| VALUE = %-3c ", e->symbol.Value.value_char);
                         break;
                     case SYM_STRING:
-                        printf("| VALUE = (%s) ", e->symbol.Value.value_str);
+                        printf("| VALUE = %-3s ", e->symbol.Value.value_str);
                         break;
+                    case SYM_FUNCTION:
+                        printf("| RETURN TYPE = %-5s ", StringFromLabel[e->symbol.Value.return_type]);
                     default:
                         break;
                 }
-                printf("| ADDRESS = (%d) ", e->symbol.address);
-                printf("| IS GLOBAL = %s", e->symbol.isGlobal ? "true" : "false");
                 printf("\n");
+                isEmpty = 0;
                 break;
         }
     }
+    if (isEmpty) printf("EMPTY TABLE\n");
 }
 
 void freeHashTable(HashTable *h) {
     if (!h) return;
+
+    free(h->functionName);
 
     for (size_t i = 0; i < TABLE_SIZE; i++) {
         if (h->table[i].state == OCCUPIED) {

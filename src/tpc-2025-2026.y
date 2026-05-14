@@ -399,7 +399,7 @@ int main(int argc, char **argv) {
         
         /* Initiates and builds the symbol table */
         HashTable *global = calloc(1, sizeof(HashTable));
-        initHashTable(global, NULL);
+        initHashTable(global, NULL, "global");
         addBuiltIns(global);
 
         /* If a semantic error is detected */

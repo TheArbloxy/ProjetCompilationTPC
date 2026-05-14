@@ -257,7 +257,7 @@ static void handleFunction(Node *n, HashTable *table) {
     Node *functType = signature->firstChild; // Function type
     Node *functName = functType->nextSibling; // Function name
 
-    printf("LABEL TYPE : %s\n", functType ? strToLabel(functType->label) : "null"); // TEST
+    // printf("LABEL TYPE : %s\n", functName ? functName->value.val_str : "null"); // TEST
 
     // Check first if the function is a refedinition
     if (lookup(table, functName->value.val_str)) {
@@ -269,10 +269,21 @@ static void handleFunction(Node *n, HashTable *table) {
 
     // Creates local symbol table for the function
     n->symTable = calloc(1, sizeof(HashTable));
-    initHashTable(n->symTable, table);
+    initHashTable(n->symTable, table, functName->value.val_str);
 
     // Check function type
     f.typ = SYM_FUNCTION;
+    switch (functType->label) {
+        case typeInt:
+            f.Value.return_type = RETURN_INT;
+            break;
+        case typeChar:
+            f.Value.return_type = RETURN_CHAR;
+            break;
+        default:
+            f.Value.return_type = RETURN_VOID;
+            break;
+    }
     f.address = -1;
     f.isGlobal = 1;
     insert(table, functName->value.val_str, f);
@@ -287,8 +298,8 @@ static void handleFunction(Node *n, HashTable *table) {
     Node *declVars = corpse->firstChild;
     Node *suiteInstr = declVars->nextSibling;
 
-    printf("LABEL DECL : %s\n", strToLabel(declVars->label)); // TEST
-    printf("LABEL SUITE : %s\n", strToLabel(suiteInstr->label)); // TEST
+    // printf("LABEL DECL : %s\n", strToLabel(declVars->label)); // TEST
+    // printf("LABEL SUITE : %s\n", strToLabel(suiteInstr->label)); // TEST
 
     // Déclarations de variables dans la fonction
     if (declVars) {
@@ -373,7 +384,9 @@ void printAllTables(Node *n) {
     if (!n) return;
 
     if (n->symTable) {
-        printf("Table au noeud %s (%d):\n", strToLabel(n->label), n->lineno);
+        printf("==========================================================================\n");
+        printf("Table - %s\n", n->symTable->functionName ? n->symTable->functionName : "null");
+        printf("==========================================================================\n");
         printHashTable(n->symTable);
         printf("\n");
     }

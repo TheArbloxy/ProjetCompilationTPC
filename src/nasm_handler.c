@@ -254,10 +254,10 @@ void genAssign(Node *node, FILE *f) {
     Node *var = node->firstChild;
     Node *expr = var->nextSibling;
 
-    printf("LABEL VAR : %s\n", var ? strToLabel(var->label) : "null");
-    printf("LABEL EXPR : %s\n", expr ? strToLabel(expr->label) : "null");
-
-    // Gérer expression
+    // printf("LABEL VAR : %s\n", var ? strToLabel(var->label) : "null");
+    // printf("LABEL EXPR : %s\n", expr ? strToLabel(expr->label) : "null");
+    
+    /* Expression */
     if (isBooleanExp(expr)) {
         genBoolExp(expr, f);
     } else {
@@ -304,7 +304,7 @@ void genInstr(Node *node, FILE *f) {
     if (!node) return;
 
     for (Node *child = node->firstChild; child; child = child->nextSibling) {
-        printf("LABEL CHILD : %s\n", child ? strToLabel(child->label) : "null");
+        // printf("LABEL CHILD : %s\n", child ? strToLabel(child->label) : "null");
 
         switch (child->label) {
             case assign: {
