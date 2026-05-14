@@ -39,6 +39,8 @@ OBJS = \
 # Compilateur
 CC = gcc
 CFLAGS = -Wall -g -I$(SRC) -I$(OBJ)
+ASMFLAGS = -f elf64
+ASMCFLAGS = -nostartfiles -no-pie
 
 # NASM + édition de liens
 ASM_RUNTIME = $(SRC)/runtime.asm
@@ -92,13 +94,13 @@ $(LEX_C): $(LEX) $(YACC_H)
 run: $(ASM_EXEC)
 
 $(ASM_EXEC): $(ASM_RUNTIME_OBJ) $(ASM_PROGRAM_OBJ)
-	gcc $(ASM_RUNTIME_OBJ) $(ASM_PROGRAM_OBJ) -o $(ASM_EXEC)
+	gcc $(ASMCFLAGS) $(ASM_RUNTIME_OBJ) $(ASM_PROGRAM_OBJ) -o $(ASM_EXEC)
 
 $(ASM_RUNTIME_OBJ): $(ASM_RUNTIME)
-	nasm -f elf64 $(ASM_RUNTIME) -o $(ASM_RUNTIME_OBJ)
+	nasm $(ASMFLAGS) $(ASM_RUNTIME) -o $(ASM_RUNTIME_OBJ)
 
 $(ASM_PROGRAM_OBJ): $(ASM_PROGRAM)
-	nasm -f elf64 $(ASM_PROGRAM) -o $(ASM_PROGRAM_OBJ)
+	nasm $(ASMFLAGS) $(ASM_PROGRAM) -o $(ASM_PROGRAM_OBJ)
 
 
 # Nettoyage

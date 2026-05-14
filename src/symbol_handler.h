@@ -6,7 +6,7 @@
 #include "symbol_table.h"
 #include "helpers.h"
 
-void buildSymbolTables(Node *n, HashTable *table);
+int buildSymbolTables(Node *n, HashTable *table);
 void printAllTables(Node *n);
 
 #endif

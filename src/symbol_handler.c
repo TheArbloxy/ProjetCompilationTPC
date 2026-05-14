@@ -3,6 +3,7 @@
 #include "tree.h"
 
 static int globalAddress = 0;
+static int semantic = 1; // Flag qui détecte si il n'y a pas d'erreur sémantique
 
 static void handleDeclVars(Node *declVars, HashTable *table) {
     /*
@@ -40,6 +41,7 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
                 printf("Erreur ligne %d : variable %s déjà déclarée\n",
                        id->lineno, id->value.val_str);
                 globalAddress -= sizeofType(s.typ);
+                semantic = 0;
             }
         }
     }
@@ -79,6 +81,7 @@ static void handleParams(Node *params, HashTable *table) {
             printf("Erreur ligne %d : paramètre %s déjà déclaré\n",
                    idNode->lineno, idNode->value.val_str);
             globalAddress -= sizeofType(s.typ);
+            semantic = 0;
         }
     }
 }
@@ -213,6 +216,7 @@ static Symbol handleEval(Node *n, HashTable *table) {
             if (!s) {
                 printf("Erreur ligne %d : paramètre %s non déclaré\n",
                        idNode->lineno ,idNode->value.val_str);
+                semantic = 0;
 
                 return makeIntSymbol(0);
             }
@@ -226,6 +230,7 @@ static Symbol handleEval(Node *n, HashTable *table) {
             if (!s) {
                 printf("Erreur ligne %d : fonction %s non déclaré\n",
                        functionName->lineno ,functionName->value.val_str);
+                semantic = 0;
 
                 return makeIntSymbol(0);
             }
@@ -258,6 +263,7 @@ static void handleFunction(Node *n, HashTable *table) {
     if (lookup(table, functName->value.val_str)) {
         printf("Erreur ligne %d : fonction %s déjà définie\n",
             n->lineno, functName->value.val_str);
+        semantic = 0;
         return;
     }
 
@@ -305,6 +311,7 @@ static void handleFunction(Node *n, HashTable *table) {
                     if (!varDest) {
                         printf("Erreur ligne %d : paramètre %s non déclaré\n",
                             instr->lineno, variableName->value.val_str);
+                        semantic = 0;
                         break;
                     }
 
@@ -320,6 +327,7 @@ static void handleFunction(Node *n, HashTable *table) {
                     if (!lookupModify(n->symTable, variableName->value.val_str, finalValue)) {
                         printf("Erreur ligne %d : modification du paramètre %s échoué\n",
                             instr->lineno, variableName->value.val_str);
+                        semantic = 0;
                     }
                     break;
                 }
@@ -330,12 +338,12 @@ static void handleFunction(Node *n, HashTable *table) {
     }
 }
 
-void buildSymbolTables(Node *n, HashTable *table) {
+int buildSymbolTables(Node *n, HashTable *table) {
     /*
     Builds all symbol tables, by linking them to the current node.
     It starts from the prog node, current handling global variables and functions.
     */
-    if (!n) return;
+    if (!n) return 1;
     // printf("LABEL N : %s\n", n ? strToLabel(n->label) : "null");
 
     Node *declVars      = n->firstChild;
@@ -355,6 +363,7 @@ void buildSymbolTables(Node *n, HashTable *table) {
         default:
             break;
     }
+    return semantic;
 }
 
 void printAllTables(Node *n) {

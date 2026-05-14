@@ -91,3 +91,27 @@ extern const char* getReserveDirective(TypeValue t) {
             return "resq";
     }
 }
+
+extern int isBooleanExp(Node *node) {
+    if (!node) return 0;
+
+    switch (node->label) {
+        case Exp:
+        case TB:
+        case FB:
+        case M:
+        case notInstr:
+        case equals:
+        case notEquals:
+        case orderInf:
+        case orderInfEquals:
+        case orderSup:
+        case orderSupEquals:
+        case andExp:
+        case orExp:
+            return 1;
+        
+        default:
+            return 0;
+    }
+}

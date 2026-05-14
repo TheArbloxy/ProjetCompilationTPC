@@ -51,11 +51,6 @@ void genExp(Node *node, FILE *f) {
             Node *op   = left ? left->nextSibling : NULL;
             Node *right= op ? op->nextSibling : NULL;
 
-            if (!left || !op || !right) {
-                printf("Erreur AST E mal formé\n");
-                return;
-            }
-
             genExp(left, f);
             genExp(right, f);
 
@@ -119,6 +114,137 @@ void genExp(Node *node, FILE *f) {
     }
 }
 
+void genCond(Node *node, FILE *f, char *trueLabel, char *falseLabel) {
+    /*
+    Generates comparaison expressions in NASM.
+    */
+    if (!node) return;
+
+    switch (node->label) {
+        case notInstr: { /* ! */
+            Node *expr = node ->firstChild;
+            genCond(expr, f, falseLabel, trueLabel);
+            break;
+        }
+        case Exp: { /* Or */
+            Node *LValue = node->firstChild;
+            Node *op = LValue->nextSibling;
+            Node *RValue = op->nextSibling;
+
+            int labelEnd = labelCounter++;
+
+            char midLabel[64];
+            sprintf(midLabel, ".Lor_right_%d", labelEnd);
+
+            genCond(LValue, f, trueLabel, midLabel);
+            fprintf(f, "%s:\n", midLabel); // RValue
+            genCond(RValue, f, trueLabel, falseLabel);
+            break;
+        }
+        case TB: { /* And*/
+            Node *LValue = node->firstChild;
+            Node *op = LValue->nextSibling;
+            Node *RValue = op->nextSibling;
+
+            int labelEnd = labelCounter++;
+
+            char midLabel[64];
+            sprintf(midLabel, ".Land_right_%d", labelEnd);
+
+            genCond(LValue, f, midLabel, falseLabel);
+            fprintf(f, "%s:\n", midLabel); // RValue
+            genCond(RValue, f, trueLabel, falseLabel);
+            break;
+        }
+        case M: /* <, <=, >, >= */
+        case FB: { /* ==, != */
+            Node *LValue = node->firstChild;
+            Node *op = LValue->nextSibling;
+            Node *RValue = op->nextSibling;
+
+            genExp(LValue, f);
+            genExp(RValue, f);
+
+            fprintf(f, "    pop rbx\n"); // RValue
+            fprintf(f, "    pop rax\n"); // LValue
+            fprintf(f, "    cmp rax, rbx\n");
+
+            switch (op->label) {
+                case orderInf: {
+                    fprintf(f, "    jl %s\n", trueLabel);
+                    break;
+                }
+                case orderInfEquals: {
+                    fprintf(f, "    jle %s\n", trueLabel);
+                    break;
+                }
+                case orderSup: {
+                    fprintf(f, "    jg %s\n", trueLabel);
+                    break;
+                }
+                case orderSupEquals: {
+                    fprintf(f, "    jge %s\n", trueLabel);
+                    break;
+                }
+                case equals: {
+                    fprintf(f, "    je %s\n", trueLabel);
+                    break;
+                }
+                case notEquals: {
+                    fprintf(f, "    jne %s\n", trueLabel);
+                    break;
+                }
+                default : {
+                    printf("Opérateur inconnu.\n");
+                    return;
+                }
+            }
+            // Si faux
+            fprintf(f, "    jmp %s\n", falseLabel);
+            break;
+        }
+        default : {
+            genExp(node, f);
+            fprintf(f, "    pop rax\n");
+            fprintf(f, "    cmp rax, 0\n");
+
+            fprintf(f, "    jne %s\n", trueLabel);
+
+            fprintf(f, "    jmp %s\n", falseLabel);
+            break;
+            
+        }
+    }
+
+}
+
+void genBoolExp(Node *node, FILE *f) {
+    /*
+    Generates a boolean expression (0/1) in NASM.
+    */
+    if (!node) return;
+
+    int labelEnd = labelCounter++;
+
+    char trueLabel[64], falseLabel[64], endLabel[64];
+    sprintf(trueLabel, ".Lbool_true_%d", labelEnd);
+    sprintf(falseLabel, ".Lbool_false_%d", labelEnd);
+    sprintf(endLabel, ".Lbool_end_%d", labelEnd);
+
+    // Test de comparaison
+    genCond(node, f, trueLabel, falseLabel);
+
+    // Si true
+    fprintf(f, "%s:\n", trueLabel);
+    fprintf(f, "    push 1\n");
+    fprintf(f, "    jmp %s\n", endLabel);
+    
+    // Sinon
+    fprintf(f, "%s:\n", falseLabel);
+    fprintf(f, "    push 0\n");
+    fprintf(f, "%s:\n", endLabel);
+}
+
 void genAssign(Node *node, FILE *f) {
     /*
     Generates assigns in NASM.
@@ -128,8 +254,16 @@ void genAssign(Node *node, FILE *f) {
     Node *var = node->firstChild;
     Node *expr = var->nextSibling;
 
+    printf("LABEL VAR : %s\n", var ? strToLabel(var->label) : "null");
+    printf("LABEL EXPR : %s\n", expr ? strToLabel(expr->label) : "null");
+
     // Gérer expression
-    genExp(expr, f);
+    if (isBooleanExp(expr)) {
+        genBoolExp(expr, f);
+    } else {
+        genExp(expr, f);
+    }
+
     // résultat au sommet de la pile
     fprintf(f, "    pop rsi\n");
 
@@ -170,6 +304,8 @@ void genInstr(Node *node, FILE *f) {
     if (!node) return;
 
     for (Node *child = node->firstChild; child; child = child->nextSibling) {
+        printf("LABEL CHILD : %s\n", child ? strToLabel(child->label) : "null");
+
         switch (child->label) {
             case assign: {
                 genAssign(child, f);
@@ -183,21 +319,24 @@ void genInstr(Node *node, FILE *f) {
                 Node *cond = child->firstChild;
                 Node *suiteInstr = cond->nextSibling;
 
-                int labelEnd = labelCounter;
-                labelCounter++;
+                int labelEnd = labelCounter++;
+
+                char trueLabel[64], falseLabel[64], endLabel[64];
+                sprintf(trueLabel, ".Lif_true_%d", labelEnd);
+                sprintf(falseLabel, ".Lif_false_%d", labelEnd);
+                sprintf(endLabel, ".Lif_end_%d", labelEnd);
 
                 // Test de comparaison
-                genExp(cond, f);
-                fprintf(f, "    pop rax\n");
+                genCond(cond, f, trueLabel, falseLabel);
 
-                fprintf(f, "    cmp rax, 0\n");
-                fprintf(f, "    je .L%d\n", labelEnd);
-                
-                // Instructions si le if passe
+                // Si true
+                fprintf(f, "%s:\n", trueLabel);
                 genInstr(suiteInstr, f);
+                fprintf(f, "    jmp %s\n", endLabel);
                 
                 // Sinon, on fait un jump après
-                fprintf(f, ".L%d:\n", labelEnd);
+                fprintf(f, "%s:\n", falseLabel);
+                fprintf(f, "%s:\n", endLabel);
                 break;
             }
             case elseSt: {
@@ -205,26 +344,25 @@ void genInstr(Node *node, FILE *f) {
                 Node *thenInstr = cond->nextSibling;
                 Node *elseInstr = thenInstr->nextSibling;
 
-                int labelEnd = labelCounter;
-                labelCounter++;
+                int labelEnd = labelCounter++;
+
+                char trueLabel[64], falseLabel[64], endLabel[64];
+                sprintf(trueLabel, ".Lifelse_true_%d", labelEnd);
+                sprintf(falseLabel, ".Lifelse_false_%d", labelEnd);
+                sprintf(endLabel, ".Lifelse_end_%d", labelEnd);
 
                 // Test de comparaison
-                genExp(cond, f);
-                fprintf(f, "    pop rax\n");
+                genCond(cond, f, trueLabel, falseLabel);
 
-                fprintf(f, "    cmp rax, 0\n");
-                fprintf(f, "    je .Lelse_%d\n", labelEnd);
-
-                // Instructions si le if passe, on jump le else
+                // Si true
+                fprintf(f, "%s:\n", trueLabel);
                 genInstr(thenInstr, f);
-                fprintf(f, "    jmp .Lendif_%d\n", labelEnd);
-
-                // Instructions du else
-                fprintf(f, ".Lelse_%d:\n", labelEnd);
+                fprintf(f, "    jmp %s\n", endLabel);
+                
+                // Sinon, on fait un jump après
+                fprintf(f, "%s:\n", falseLabel);
                 genInstr(elseInstr, f);
-
-                // Fin
-                fprintf(f, ".Lendif_%d:\n", labelEnd);
+                fprintf(f, "%s:\n", endLabel);
                 break;
             }
             default:

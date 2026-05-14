@@ -390,27 +390,33 @@ int main(int argc, char **argv) {
                 break;
             default:
                 fprintf(stderr, "Unknown option.\n");
-                return 2;
+                return 3;
             }
     }
 
     /* AST Tree */
     if (yyparse() == 0) {
-
-        FILE* f = fopen("_anonymous.asm", "w");
-        if (!f) {
-            printf("ouverture du fichier _anonymous.asm échouée");
-            return 0;
-        }
         
         /* Initiates and builds the symbol table */
         HashTable *global = calloc(1, sizeof(HashTable));
         initHashTable(global, NULL);
         addBuiltIns(global);
-        buildSymbolTables(node, global);
 
+        /* If a semantic error is detected */
+        if (!buildSymbolTables(node, global)) {
+            printf("Erreur sémantique détectée, arrêt de la compilation.\n");
+            deleteTree(node);
+            return 2;
+        }
         if (symtabs) {
             printAllTables(node);
+        }
+
+        FILE* f = fopen("_anonymous.asm", "w");
+        if (!f) {
+            printf("Ouverture du fichier _anonymous.asm échouée\n");
+            deleteTree(node);
+            return 4;
         }
 
         /* Creates the _anonymous.asm file */
@@ -424,6 +430,7 @@ int main(int argc, char **argv) {
         fprintf(stdout, "Test passed.\n");
     } else {
         fprintf(stdout, "Test failed.\n");
+        return 1;
     }
 
     return 0;
