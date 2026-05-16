@@ -2,6 +2,13 @@
 
 static int labelCounter = 0;
 
+static const char *ArgumentsRegs[] = {
+    "rdi", "rsi", "rdx", "rcx", "r8", "r9"
+};
+static const char *ArgumentsRegs2[] = {
+    "edi", "esi", "edx", "ecx", "r8d", "r9d"
+};
+
 void genExp(Node *node, FILE *f) {
     /*
     Generates expression handling in NASM.
@@ -90,18 +97,38 @@ void genExp(Node *node, FILE *f) {
         // Appel fonction
         case appelFonct: {
             Node *functionName = node->firstChild;
-            // Node *args = functionName->nextSibling;
+            Node *args = functionName->nextSibling;
 
-            if (!functionName) return;
+            if (!functionName || !args) return;
+
+            // Arguments
+            int argc = numberArgs(args);
+            if (argc > 6) {
+                printf("Fonctions avec plus de 6 arguments non supportés pour l'instant\n");
+                return;
+            }
+
+            // Évalutation des arguments
+            for (Node *arg = args->firstChild; arg; arg = arg->nextSibling) {
+                genExp(arg, f);
+            }
+
+            // Les placer dans les registres
+            for (int i = argc - 1; i >= 0; i--) {
+                fprintf(f, "    pop %s\n", ArgumentsRegs[i]);
+            }
 
             // Fonctions builtin (getchar et getint)
             if (strcmp(functionName->value.val_str, "getchar") == 0) {
                 fprintf(f, "    call my_getchar\n");
-                fprintf(f, "    push rax\n");
             } else if (strcmp(functionName->value.val_str, "getint") == 0) {
                 fprintf(f, "    call my_getint\n");
-                fprintf(f, "    push rax\n");
+            // Fonctions normales
+            } else {
+                fprintf(f, "    call _%s\n", functionName->value.val_str);
             }
+
+            fprintf(f, "    push rax\n");
             break;
         }
 
@@ -294,7 +321,37 @@ void genFunctCall(Node *node, FILE *f) {
         fprintf(f, "    call my_putchar\n");
     } else if (strcmp(functionName->value.val_str, "putint") == 0) {
         fprintf(f, "    call my_putint\n");
+    // Fonctions normales
+    } else {
+        fprintf(f, "    call _%s\n", functionName->value.val_str);
     }
+}
+
+void genReturn(Node *node, FILE *f) {
+    /*
+    Generates a return instruction in NASM.
+    */
+    if (!node) return;
+
+    Node *expr = node->firstChild;
+    if (!expr) return;
+
+    /* Expression */
+    if (isBooleanExp(expr)) {
+        genBoolExp(expr, f);
+    } else {
+        genExp(expr, f);
+    }
+
+    fprintf(f, "    pop rax\n");
+    fprintf(f, "    ret\n");
+}
+
+void genReturnVoid(FILE *f) {
+    /*
+    Generates a void return instruction in NASM.
+    */
+    fprintf(f, "    ret\n");
 }
 
 void genInstr(Node *node, FILE *f) {
@@ -317,25 +374,27 @@ void genInstr(Node *node, FILE *f) {
             }
             case ifSt: {
                 Node *cond = child->firstChild;
-                Node *suiteInstr = cond->nextSibling;
+                Node *thenInstr = cond->nextSibling;
+                Node *elseInstr = thenInstr->nextSibling;
 
                 int labelEnd = labelCounter++;
 
                 char trueLabel[64], falseLabel[64], endLabel[64];
-                sprintf(trueLabel, ".Lif_true_%d", labelEnd);
-                sprintf(falseLabel, ".Lif_false_%d", labelEnd);
-                sprintf(endLabel, ".Lif_end_%d", labelEnd);
+                sprintf(trueLabel, ".Lifelse_true_%d", labelEnd);
+                sprintf(falseLabel, ".Lifelse_false_%d", labelEnd);
+                sprintf(endLabel, ".Lifelse_end_%d", labelEnd);
 
                 // Test de comparaison
                 genCond(cond, f, trueLabel, falseLabel);
 
                 // Si true
                 fprintf(f, "%s:\n", trueLabel);
-                genInstr(suiteInstr, f);
+                genInstr(thenInstr, f);
                 fprintf(f, "    jmp %s\n", endLabel);
                 
                 // Sinon, on fait un jump après
                 fprintf(f, "%s:\n", falseLabel);
+                genInstr(elseInstr, f);
                 fprintf(f, "%s:\n", endLabel);
                 break;
             }
@@ -363,6 +422,14 @@ void genInstr(Node *node, FILE *f) {
                 fprintf(f, "%s:\n", falseLabel);
                 genInstr(elseInstr, f);
                 fprintf(f, "%s:\n", endLabel);
+                break;
+            }
+            case returnSt: {
+                genReturn(child, f);
+                break;
+            }
+            case voidSt: {
+                genReturnVoid(f);
                 break;
             }
             default:
@@ -401,6 +468,28 @@ void genGlobalVariables(HashTable* h, FILE *f) {
     fprintf(f, "\n");
 }
 
+void genParametreStockage(Node *node, FILE *f) {
+    /*
+    Generates function's parameters handling in NASM.
+    */
+    if (!node) return;
+
+    int i = 0;
+    for (Node *p = node->firstChild; p; p = p->nextSibling) {
+        Node *idNode = NULL;
+        for (Node *c = p->firstChild; c; c = c->nextSibling) {
+            if (c->label == id) {
+                idNode = c;
+            }
+        }
+
+        if (idNode) {
+            fprintf(f, "    mov [%s], %s\n", idNode->value.val_str, ArgumentsRegs2[i]);
+        }
+        i++;
+    }
+}
+
 int isMainFunction(Node *node) {
     /*
     Checks if the node is the main function.
@@ -433,21 +522,35 @@ void parcoursArbre(Node *n, FILE *f) {
         // Global variables
         case prog:
             genGlobalVariables(n->symTable, f);
+            
+            fprintf(f, "global _start\n\nsection .text\n");
+            fprintf(f, "extern my_getchar\n"
+                        "extern my_putchar\n"
+                        "extern my_getint\n"
+                        "extern my_putint\n");
+            fprintf(f, "\n_start:\n");
+            fprintf(f, "    call _main\n");
+
+            fprintf(f, "    mov rdi, rax\n    mov rax, 60\n    syscall\n");
         // Functions
         case declFoncts:
             for (Node *declFonct = declFunctions->firstChild; declFonct; declFonct = declFonct->nextSibling) {
-                if (isMainFunction(declFonct)) {
-                    fprintf(f, "global _start\n\nsection .text\n");
-                    fprintf(f, "extern my_getchar\n"
-                                "extern my_putchar\n"
-                                "extern my_getint\n"
-                                "extern my_putint\n");
-                    fprintf(f, "\n_start:\n");
-                    Node *corps = declFonct->firstChild->nextSibling;
-                    genInstr(corps->firstChild->nextSibling, f);
+                Node *enTete = declFonct->firstChild;
+                Node *corps = enTete->nextSibling;
 
-                    fprintf(f, "    mov rax, 60\n    mov rdi, 0\n    syscall");
+                // Label fonction
+                if (declFonct->symTable) fprintf(f, "_%s:\n", declFonct->symTable->functionName);
+                Node *params = NULL;
+                // Paramètres
+                for (Node *c = enTete->firstChild; c; c = c->nextSibling) {
+                    if (c->label == Parametres) {
+                        params = c;
+                    }
                 }
+                genParametreStockage(params, f);
+
+                genInstr(corps->firstChild->nextSibling, f);
+                fprintf(f, "    mov rax, 0\n    ret\n");
             }
         default:
             break;

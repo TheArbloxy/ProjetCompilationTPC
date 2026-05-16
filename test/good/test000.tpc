@@ -1,15 +1,40 @@
 int x;
 int y;
 
+void araujo(void) {
+    putchar('C');
+    putchar('A');
+    putchar('R');
+    putchar('T');
+    putchar('O');
+    putchar('N');
+    putchar(' ');
+    putchar('R');
+    putchar('O');
+    putchar('U');
+    putchar('G');
+    putchar('E');
+    putchar('\n');
+    return;
+}
+
+int cubarsi(void) {
+    return 1;
+}
+
+int ferran(int a, int b) {
+    return a + b;
+}
+
 int main(void) {
-    x = 1;
-    y = 2;
-    if (x) {
-        y = 3;
+    araujo();
+    x = cubarsi();
+    y = ferran(1, 1);
+    if (x > y) {
+        putint(1);
     } else {
-        y = 6;
+        putint(2);
     }
-    putint(y);
     putchar('\n');
     return 0;
 }

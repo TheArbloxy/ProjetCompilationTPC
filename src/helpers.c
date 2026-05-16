@@ -115,3 +115,11 @@ extern int isBooleanExp(Node *node) {
             return 0;
     }
 }
+
+extern int numberArgs(Node *node) {
+    if (!node) return 0;
+    
+    int n = 0;
+    for (Node *c = node->firstChild; c; c = c->nextSibling, n++);
+    return n;
+}

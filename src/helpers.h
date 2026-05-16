@@ -16,5 +16,6 @@ int isGlobalScope(HashTable* h);
 
 const char* getReserveDirective(TypeValue t);
 int isBooleanExp(Node *node);
+int numberArgs(Node *node);
 
 #endif

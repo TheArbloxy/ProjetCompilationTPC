@@ -1,6 +1,5 @@
 section .bss
     x: resd 1
-    y: resd 1
 
 global _start
 
@@ -11,35 +10,37 @@ extern my_getint
 extern my_putint
 
 _start:
-    push 1
-    pop rsi
-    mov [x], esi
-    push 2
-    pop rsi
-    mov [y], esi
-    mov eax, [x]
+    call _main
+    mov rdi, rax
+    mov rax, 60
+    syscall
+_add:
+    mov eax, [a]
+    push rax
+    mov eax, [b]
+    push rax
+    pop rbx
+    pop rax
+    add rax, rbx
     push rax
     pop rax
-    cmp rax, 0
-    jne .Lifelse_true_0
-    jmp .Lifelse_false_0
-.Lifelse_true_0:
-    push 3
+    ret
+    mov rax, 0
+    ret
+_main:
+    call my_getint
+    push rax
     pop rsi
-    mov [y], esi
-    jmp .Lifelse_end_0
-.Lifelse_false_0:
-    push 6
-    pop rsi
-    mov [y], esi
-.Lifelse_end_0:
-    mov eax, [y]
+    mov [x], esi
+    mov eax, [x]
     push rax
     pop rdi
     call my_putint
     push 10
     pop rdi
     call my_putchar
-    mov rax, 60
-    mov rdi, 0
-    syscall
+    push 0
+    pop rax
+    ret
+    mov rax, 0
+    ret
