@@ -29,19 +29,25 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
                 default:
                     s.typ = SYM_NONE;
             }
+
             if (isGlobalScope(table)) {
                 s.address = globalAddress;
                 s.isGlobal = 1;
-                globalAddress += sizeofType(s.typ);
             } else {
-                s.address = -1;
+                s.address = table->relativeAddress;
                 s.isGlobal = 0;
             }
+
             if (!insert(table, id->value.val_str, s)) {
                 printf("Erreur ligne %d : variable %s déjà déclarée\n",
                        id->lineno, id->value.val_str);
-                globalAddress -= sizeofType(s.typ);
                 semantic = 0;
+            } else {
+                if (isGlobalScope(table)) {
+                    s.address += sizeofType(s.typ);
+                } else {
+                    table->relativeAddress += sizeofType(s.typ);
+                }
             }
         }
     }
@@ -72,16 +78,21 @@ static void handleParams(Node *params, HashTable *table) {
         if (isGlobalScope(table)) {
             s.address = globalAddress;
             s.isGlobal = 1;
-            globalAddress += sizeofType(s.typ);
         } else {
-            s.address = -1;
+            s.address = table->relativeAddress;
             s.isGlobal = 0;
         }
+
         if (!insert(table, idNode->value.val_str, s)) {
             printf("Erreur ligne %d : paramètre %s déjà déclaré\n",
                    idNode->lineno, idNode->value.val_str);
-            globalAddress -= sizeofType(s.typ);
             semantic = 0;
+        } else {
+            if (isGlobalScope(table)) {
+                s.address += sizeofType(s.typ);
+            } else {
+                table->relativeAddress += sizeofType(s.typ);
+            }
         }
     }
 }
@@ -269,7 +280,7 @@ static void handleFunction(Node *n, HashTable *table) {
 
     // Creates local symbol table for the function
     n->symTable = calloc(1, sizeof(HashTable));
-    initHashTable(n->symTable, table, functName->value.val_str);
+    initHashTable(n->symTable, table, functName->value.val_str, 4);
 
     // Check function type
     f.typ = SYM_FUNCTION;

@@ -47,11 +47,13 @@ typedef struct {
 
 typedef struct HashTable {
     char* functionName;
+    int relativeAddress;
+    
     HashEntry table[TABLE_SIZE];
     struct HashTable *parent;
 } HashTable;
 
-void initHashTable(HashTable* h, HashTable* global, const char* name);
+void initHashTable(HashTable* h, HashTable* global, const char* name, int startingAdress);
 int insert(HashTable *h, const char* key, Symbol symbol);
 Symbol* lookup(HashTable *h, const char* key);
 Symbol* search(HashTable *h, const char* key);

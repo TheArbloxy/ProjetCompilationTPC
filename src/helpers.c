@@ -123,3 +123,11 @@ extern int numberArgs(Node *node) {
     for (Node *c = node->firstChild; c; c = c->nextSibling, n++);
     return n;
 }
+
+extern int getLocalStackTable(HashTable *h) {
+    return -(h->relativeAddress);
+}
+
+extern int align16(int n) {
+    return ((n + 15) / 16) * 16;
+}

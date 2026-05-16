@@ -9,7 +9,46 @@ static const char *ArgumentsRegs2[] = {
     "edi", "esi", "edx", "ecx", "r8d", "r9d"
 };
 
-void genExp(Node *node, FILE *f) {
+void genLoadVariable(Node *node, FILE *f, HashTable *h) {
+    /*
+    Generates variable accessing in NASM.
+    */
+    if (!node) return;
+
+    Symbol *s = lookup(h, node->value.val_str);
+    if (!s) return;
+
+    if (s->isGlobal) {
+        fprintf(f, "    mov eax, [%s]\n", node->value.val_str);
+    } else {
+        fprintf(f, "    mov eax, dword [rbp - %d]\n", s->address);
+    }
+
+    fprintf(f, "    push rax\n");
+}
+
+void genStoreVariable(Node *node, FILE *f, HashTable *h) {
+    /*
+    Generates variable storing in NASM.
+    */
+    if (!node) return;
+
+    printf("STORE VARIABLE : %s\n", node->value.val_str ? node->value.val_str : "null");
+
+    Symbol *s = lookup(h, node->value.val_str);
+    if (!s) return;
+
+    // résultat au sommet de la pile
+    fprintf(f, "    pop rsi\n");
+
+    if (s->isGlobal) {
+        fprintf(f, "    mov [%s], esi\n", node->value.val_str);
+    } else {
+        fprintf(f, "    mov dword [rbp - %d], esi\n", s->address);
+    }
+}
+
+void genExp(Node *node, FILE *f, HashTable *h) {
     /*
     Generates expression handling in NASM.
     */
@@ -42,8 +81,7 @@ void genExp(Node *node, FILE *f) {
                 return;
             }
 
-            fprintf(f, "    mov eax, [%s]\n", idNode->value.val_str);
-            fprintf(f, "    push rax\n");
+            genLoadVariable(idNode, f, h);
             break;
         }
 
@@ -58,8 +96,8 @@ void genExp(Node *node, FILE *f) {
             Node *op   = left ? left->nextSibling : NULL;
             Node *right= op ? op->nextSibling : NULL;
 
-            genExp(left, f);
-            genExp(right, f);
+            genExp(left, f, h);
+            genExp(right, f, h);
 
             fprintf(f, "    pop rbx\n"); // droite
             fprintf(f, "    pop rax\n"); // gauche
@@ -110,7 +148,7 @@ void genExp(Node *node, FILE *f) {
 
             // Évalutation des arguments
             for (Node *arg = args->firstChild; arg; arg = arg->nextSibling) {
-                genExp(arg, f);
+                genExp(arg, f, h);
             }
 
             // Les placer dans les registres
@@ -135,13 +173,13 @@ void genExp(Node *node, FILE *f) {
         default:
             // fallback
             for (Node *child = node->firstChild; child; child = child->nextSibling) {
-                genExp(child, f);
+                genExp(child, f, h);
             }
             break;
     }
 }
 
-void genCond(Node *node, FILE *f, char *trueLabel, char *falseLabel) {
+void genCond(Node *node, FILE *f, HashTable *h, char *trueLabel, char *falseLabel) {
     /*
     Generates comparaison expressions in NASM.
     */
@@ -150,7 +188,7 @@ void genCond(Node *node, FILE *f, char *trueLabel, char *falseLabel) {
     switch (node->label) {
         case notInstr: { /* ! */
             Node *expr = node ->firstChild;
-            genCond(expr, f, falseLabel, trueLabel);
+            genCond(expr, f, h, falseLabel, trueLabel);
             break;
         }
         case Exp: { /* Or */
@@ -163,9 +201,9 @@ void genCond(Node *node, FILE *f, char *trueLabel, char *falseLabel) {
             char midLabel[64];
             sprintf(midLabel, ".Lor_right_%d", labelEnd);
 
-            genCond(LValue, f, trueLabel, midLabel);
+            genCond(LValue, f, h, trueLabel, midLabel);
             fprintf(f, "%s:\n", midLabel); // RValue
-            genCond(RValue, f, trueLabel, falseLabel);
+            genCond(RValue, f, h, trueLabel, falseLabel);
             break;
         }
         case TB: { /* And*/
@@ -178,9 +216,9 @@ void genCond(Node *node, FILE *f, char *trueLabel, char *falseLabel) {
             char midLabel[64];
             sprintf(midLabel, ".Land_right_%d", labelEnd);
 
-            genCond(LValue, f, midLabel, falseLabel);
+            genCond(LValue, f, h,  midLabel, falseLabel);
             fprintf(f, "%s:\n", midLabel); // RValue
-            genCond(RValue, f, trueLabel, falseLabel);
+            genCond(RValue, f, h,  trueLabel, falseLabel);
             break;
         }
         case M: /* <, <=, >, >= */
@@ -189,8 +227,8 @@ void genCond(Node *node, FILE *f, char *trueLabel, char *falseLabel) {
             Node *op = LValue->nextSibling;
             Node *RValue = op->nextSibling;
 
-            genExp(LValue, f);
-            genExp(RValue, f);
+            genExp(LValue, f, h);
+            genExp(RValue, f, h);
 
             fprintf(f, "    pop rbx\n"); // RValue
             fprintf(f, "    pop rax\n"); // LValue
@@ -231,7 +269,7 @@ void genCond(Node *node, FILE *f, char *trueLabel, char *falseLabel) {
             break;
         }
         default : {
-            genExp(node, f);
+            genExp(node, f, h);
             fprintf(f, "    pop rax\n");
             fprintf(f, "    cmp rax, 0\n");
 
@@ -245,7 +283,7 @@ void genCond(Node *node, FILE *f, char *trueLabel, char *falseLabel) {
 
 }
 
-void genBoolExp(Node *node, FILE *f) {
+void genBoolExp(Node *node, FILE *f, HashTable *h) {
     /*
     Generates a boolean expression (0/1) in NASM.
     */
@@ -259,7 +297,7 @@ void genBoolExp(Node *node, FILE *f) {
     sprintf(endLabel, ".Lbool_end_%d", labelEnd);
 
     // Test de comparaison
-    genCond(node, f, trueLabel, falseLabel);
+    genCond(node, f, h, trueLabel, falseLabel);
 
     // Si true
     fprintf(f, "%s:\n", trueLabel);
@@ -272,7 +310,7 @@ void genBoolExp(Node *node, FILE *f) {
     fprintf(f, "%s:\n", endLabel);
 }
 
-void genAssign(Node *node, FILE *f) {
+void genAssign(Node *node, FILE *f, HashTable *h) {
     /*
     Generates assigns in NASM.
     */
@@ -286,21 +324,15 @@ void genAssign(Node *node, FILE *f) {
     
     /* Expression */
     if (isBooleanExp(expr)) {
-        genBoolExp(expr, f);
+        genBoolExp(expr, f, h);
     } else {
-        genExp(expr, f);
+        genExp(expr, f, h);
     }
 
-    // résultat au sommet de la pile
-    fprintf(f, "    pop rsi\n");
-
-    if (var->label == fieldAccess) {
-        Node *idNode = var->firstChild;
-        fprintf(f, "    mov [%s], esi\n", idNode->value.val_str);
-    } 
+    genStoreVariable(var->firstChild, f, h);
 }
 
-void genFunctCall(Node *node, FILE *f) {
+void genFunctCall(Node *node, FILE *f, HashTable *h) {
     /*
     Generates function calls in NASM.
     */
@@ -312,7 +344,7 @@ void genFunctCall(Node *node, FILE *f) {
     // Générer arguments
     if (args && args->firstChild) {
         Node *arg = args->firstChild;
-        genExp(arg, f);
+        genExp(arg, f, h);
         fprintf(f, "    pop rdi\n");
     }
 
@@ -327,7 +359,31 @@ void genFunctCall(Node *node, FILE *f) {
     }
 }
 
-void genReturn(Node *node, FILE *f) {
+void genFunctBeginning(Node *node, FILE *f) {
+    /*
+    Generates the beginning of a function in NASM.
+    */
+    if (!node) return;
+
+    fprintf(f, "    push rbp\n");
+    fprintf(f, "    mov rbp, rsp\n");
+
+    int size = align16(node->symTable->relativeAddress);
+    if (size > 0) {
+        fprintf(f, "    sub rsp, %d\n", size);
+    }
+}
+
+void genFunctEnd(FILE *f) {
+    /*
+    Generates the end of a function in NASM.
+    */
+    fprintf(f, "    mov rsp, rbp\n");
+    fprintf(f, "    pop rbp\n");
+    fprintf(f, "    ret\n");
+}
+
+void genReturn(Node *node, FILE *f, HashTable *h) {
     /*
     Generates a return instruction in NASM.
     */
@@ -338,13 +394,14 @@ void genReturn(Node *node, FILE *f) {
 
     /* Expression */
     if (isBooleanExp(expr)) {
-        genBoolExp(expr, f);
+        genBoolExp(expr, f, h);
     } else {
-        genExp(expr, f);
+        genExp(expr, f, h);
     }
 
     fprintf(f, "    pop rax\n");
-    fprintf(f, "    ret\n");
+
+    genFunctEnd(f);
 }
 
 void genReturnVoid(FILE *f) {
@@ -354,7 +411,7 @@ void genReturnVoid(FILE *f) {
     fprintf(f, "    ret\n");
 }
 
-void genInstr(Node *node, FILE *f) {
+void genInstr(Node *node, FILE *f, HashTable *h) {
     /*
     Generates instructions in NASM.
     */
@@ -365,11 +422,11 @@ void genInstr(Node *node, FILE *f) {
 
         switch (child->label) {
             case assign: {
-                genAssign(child, f);
+                genAssign(child, f, h);
                 break;
             }
             case appelFonct: {
-                genFunctCall(child, f);
+                genFunctCall(child, f, h);
                 break;
             }
             case ifSt: {
@@ -385,16 +442,16 @@ void genInstr(Node *node, FILE *f) {
                 sprintf(endLabel, ".Lifelse_end_%d", labelEnd);
 
                 // Test de comparaison
-                genCond(cond, f, trueLabel, falseLabel);
+                genCond(cond, f, h, trueLabel, falseLabel);
 
                 // Si true
                 fprintf(f, "%s:\n", trueLabel);
-                genInstr(thenInstr, f);
+                genInstr(thenInstr, f, h);
                 fprintf(f, "    jmp %s\n", endLabel);
                 
                 // Sinon, on fait un jump après
                 fprintf(f, "%s:\n", falseLabel);
-                genInstr(elseInstr, f);
+                genInstr(elseInstr, f, h);
                 fprintf(f, "%s:\n", endLabel);
                 break;
             }
@@ -411,21 +468,21 @@ void genInstr(Node *node, FILE *f) {
                 sprintf(endLabel, ".Lifelse_end_%d", labelEnd);
 
                 // Test de comparaison
-                genCond(cond, f, trueLabel, falseLabel);
+                genCond(cond, f, h, trueLabel, falseLabel);
 
                 // Si true
                 fprintf(f, "%s:\n", trueLabel);
-                genInstr(thenInstr, f);
+                genInstr(thenInstr, f, h);
                 fprintf(f, "    jmp %s\n", endLabel);
                 
                 // Sinon, on fait un jump après
                 fprintf(f, "%s:\n", falseLabel);
-                genInstr(elseInstr, f);
+                genInstr(elseInstr, f, h);
                 fprintf(f, "%s:\n", endLabel);
                 break;
             }
             case returnSt: {
-                genReturn(child, f);
+                genReturn(child, f, h);
                 break;
             }
             case voidSt: {
@@ -468,26 +525,31 @@ void genGlobalVariables(HashTable* h, FILE *f) {
     fprintf(f, "\n");
 }
 
-void genParametreStockage(Node *node, FILE *f) {
+void genParametreStockage(Node *node, FILE *f, HashTable *h) {
     /*
     Generates function's parameters handling in NASM.
     */
     if (!node) return;
 
     int i = 0;
-    for (Node *p = node->firstChild; p; p = p->nextSibling) {
-        Node *idNode = NULL;
-        for (Node *c = p->firstChild; c; c = c->nextSibling) {
-            if (c->label == id) {
-                idNode = c;
-            }
+    Node *p = node->firstChild;
+    for (Node *c = p->firstChild; c; c = c->nextSibling) {
+        Node *ident = c->firstChild->nextSibling;
+        if (ident->label == id) {
+            Symbol *s = lookup(h, ident->value.val_str);
+            if (!s) return;
+
+            fprintf(f, "    mov dword [rbp - %d], %s\n", s->address, ArgumentsRegs2[i]);
         }
 
-        if (idNode) {
-            fprintf(f, "    mov [%s], %s\n", idNode->value.val_str, ArgumentsRegs2[i]);
-        }
         i++;
+
+        if (i >= 6) {
+            printf("Fonctions avec plus de 6 arguments non supportés pour l'instant\n");
+            return;
+        }
     }
+
 }
 
 int isMainFunction(Node *node) {
@@ -537,20 +599,16 @@ void parcoursArbre(Node *n, FILE *f) {
             for (Node *declFonct = declFunctions->firstChild; declFonct; declFonct = declFonct->nextSibling) {
                 Node *enTete = declFonct->firstChild;
                 Node *corps = enTete->nextSibling;
+                Node *params = enTete->firstChild->nextSibling->nextSibling;
 
                 // Label fonction
                 if (declFonct->symTable) fprintf(f, "_%s:\n", declFonct->symTable->functionName);
-                Node *params = NULL;
-                // Paramètres
-                for (Node *c = enTete->firstChild; c; c = c->nextSibling) {
-                    if (c->label == Parametres) {
-                        params = c;
-                    }
-                }
-                genParametreStockage(params, f);
+                genFunctBeginning(declFonct, f);
 
-                genInstr(corps->firstChild->nextSibling, f);
-                fprintf(f, "    mov rax, 0\n    ret\n");
+                // Paramètres
+                genParametreStockage(params, f, declFonct->symTable);
+
+                genInstr(corps->firstChild->nextSibling, f, declFonct->symTable);
             }
         default:
             break;

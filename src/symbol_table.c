@@ -22,8 +22,9 @@ static unsigned int hash(const char* str) {
 
 // MAIN //
 
-void initHashTable(HashTable* h, HashTable* global, const char* name) {
+void initHashTable(HashTable* h, HashTable* global, const char* name, int startingAdress) {
     h->functionName = strdup(name);
+    h->relativeAddress = startingAdress;
     for (int i = 0; i < TABLE_SIZE; i++) {
         h->table[i].key = NULL;
         h->table[i].state = EMPTY;
@@ -132,6 +133,7 @@ int deleteH(HashTable *h, const char* key) {
 
 void printHashTable(HashTable *h) {
     int isEmpty = 1; // Flag checking if the table is empty
+    printf("RELATIVE = %-20d\n", h->relativeAddress);
 
     for (int i = 0; i < TABLE_SIZE; i++) {
         HashEntry *e = &h->table[i];

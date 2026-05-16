@@ -17,5 +17,7 @@ int isGlobalScope(HashTable* h);
 const char* getReserveDirective(TypeValue t);
 int isBooleanExp(Node *node);
 int numberArgs(Node *node);
+int getLocalStackTable(HashTable *h);
+int align16(int n);
 
 #endif

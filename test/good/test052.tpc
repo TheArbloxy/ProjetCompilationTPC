@@ -1,11 +1,15 @@
-int x;
-
 int add(int a, int b) {
     return a + b;
 }
 
+int sub(int a, int b) {
+    return a - b;
+}
+
+
 int main(void) {
-    x = getint();
+    int x;
+    x = add(1, 2) * sub(4, 2);
     putint(x);
     putchar('\n');
     return 0;
