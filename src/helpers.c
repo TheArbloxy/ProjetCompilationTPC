@@ -2,6 +2,24 @@
 
 // HELPERS SYMBOL HANDLER //
 
+void printAllTables(Node *n) {
+    /*
+    Prints all hash tables from nodes.
+    */
+    if (!n) return;
+
+    if (n->symTable) {
+        printf("==========================================================================\n");
+        printf("Table - %s\n", n->symTable->functionName ? n->symTable->functionName : "null");
+        printf("==========================================================================\n");
+        printHashTable(n->symTable);
+        printf("\n");
+    }
+
+    printAllTables(n->firstChild);
+    printAllTables(n->nextSibling);
+}
+
 extern Symbol makeIntSymbol(int v) {
     /*
     Handles a direct access to an int constant.
@@ -33,6 +51,13 @@ extern int castCheck(TypeValue LValue, TypeValue RValue) {
     */
     return !(LValue == SYM_CHAR && RValue == SYM_INT);
 } 
+
+extern int notCastFunction(TypeValue LValue, TypeValue RValue) {
+    /*
+    Checks if not (function -> int / char), and vice-versa.
+    */
+    return !((LValue == SYM_INT || LValue == SYM_CHAR) && (RValue == SYM_FUNCTION || RValue == SYM_BUILTIN));
+}
 
 extern Symbol castSymbol(Symbol LValue, Symbol RValue) {
     /*

@@ -3,7 +3,7 @@
 #include "tree.h"
 
 static int globalAddress = 0;
-static int semantic = 1; // Flag qui détecte si il n'y a pas d'erreur sémantique
+static int semanticErrorCount = 0;
 
 static void handleDeclVars(Node *declVars, HashTable *table) {
     /*
@@ -41,8 +41,9 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
             if (!insert(table, id->value.val_str, s)) {
                 printf("Erreur ligne %d : variable %s déjà déclarée\n",
                        id->lineno, id->value.val_str);
-                semantic = 0;
+                semanticErrorCount++;
             } else {
+                printf("A\n");
                 if (isGlobalScope(table)) {
                     s.address += sizeofType(s.typ);
                 } else {
@@ -54,7 +55,7 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
 }
 
 
-static void handleParams(Node *params, HashTable *table) {
+static void handleParams(Node *params, HashTable *table, FunctionInfo *f) {
     /*
     Handles function's parameters from the AST, to the symbol tree.
     */
@@ -86,13 +87,16 @@ static void handleParams(Node *params, HashTable *table) {
         if (!insert(table, idNode->value.val_str, s)) {
             printf("Erreur ligne %d : paramètre %s déjà déclaré\n",
                    idNode->lineno, idNode->value.val_str);
-            semantic = 0;
+            semanticErrorCount++;
         } else {
             if (isGlobalScope(table)) {
                 s.address += sizeofType(s.typ);
             } else {
                 table->relativeAddress += sizeofType(s.typ);
             }
+            // Récupérer type
+            f->paramTypes[f->numberParams] = s.typ;
+            if (s.typ != SYM_NONE) f->numberParams++;
         }
     }
 }
@@ -225,27 +229,49 @@ static Symbol handleEval(Node *n, HashTable *table) {
             Node *idNode = n->firstChild;
             Symbol *s = lookup(table, idNode->value.val_str);
             if (!s) {
-                printf("Erreur ligne %d : paramètre %s non déclaré\n",
+                printf("Erreur ligne %d : variable %s non déclarée\n",
                        idNode->lineno ,idNode->value.val_str);
-                semantic = 0;
+                semanticErrorCount++;
 
                 return makeIntSymbol(0);
             }
-            printf("SYMBOL : %d\n", s->Value.value_int ? s->Value.value_int : -999);
             return *s;
         }
         // Appel fonction
         case appelFonct: {
             Node *functionName = n->firstChild;
-            Symbol *s = lookup(table, functionName->value.val_str);
+            Node *arguments = functionName->nextSibling;
+
+            // Non de fonction
+            Symbol *s = lookupFunction(table, functionName->value.val_str);
             if (!s) {
-                printf("Erreur ligne %d : fonction %s non déclaré\n",
+                printf("Erreur ligne %d : fonction %s non déclarée\n",
                        functionName->lineno ,functionName->value.val_str);
-                semantic = 0;
+                semanticErrorCount++;
 
                 return makeIntSymbol(0);
             }
-            printf("FUNCTION\n");
+
+            // Check arguments
+            if (s->Value.value_funct.numberParams > numberArgs(arguments)) {
+                printf("Erreur ligne %d : pas assez d'arguments à la fonction %s, %d expecté, %d reçu\n",
+                       functionName->lineno ,functionName->value.val_str,
+                        s->Value.value_funct.numberParams, numberArgs(arguments));
+                semanticErrorCount++;
+
+                return makeIntSymbol(0);
+
+            } else if (s->Value.value_funct.numberParams < numberArgs(arguments)) {
+                printf("Erreur ligne %d : trop d'arguments à la fonction %s, %d expecté, %d reçu\n",
+                       functionName->lineno ,functionName->value.val_str,
+                        s->Value.value_funct.numberParams, numberArgs(arguments));
+                semanticErrorCount++;
+
+                return makeIntSymbol(0);
+            }
+            
+            handleEval(arguments->firstChild, table);
+
             return *s;
         }
 
@@ -271,10 +297,16 @@ static void handleFunction(Node *n, HashTable *table) {
     // printf("LABEL TYPE : %s\n", functName ? functName->value.val_str : "null"); // TEST
 
     // Check first if the function is a refedinition
-    if (lookup(table, functName->value.val_str)) {
+    if (lookupFunction(table, functName->value.val_str)) {
         printf("Erreur ligne %d : fonction %s déjà définie\n",
             n->lineno, functName->value.val_str);
-        semantic = 0;
+        semanticErrorCount++;
+        return;
+    }
+    if (lookup(table, functName->value.val_str)) {
+        printf("Erreur ligne %d : redéfinition de l'espace de nommage %s\n",
+            n->lineno, functName->value.val_str);
+        semanticErrorCount++;
         return;
     }
 
@@ -286,24 +318,26 @@ static void handleFunction(Node *n, HashTable *table) {
     f.typ = SYM_FUNCTION;
     switch (functType->label) {
         case typeInt:
-            f.Value.return_type = RETURN_INT;
+            f.Value.value_funct.returnType = RETURN_INT;
             break;
         case typeChar:
-            f.Value.return_type = RETURN_CHAR;
+            f.Value.value_funct.returnType = RETURN_CHAR;
             break;
         default:
-            f.Value.return_type = RETURN_VOID;
+            f.Value.value_funct.returnType = RETURN_VOID;
             break;
     }
+
     f.address = -1;
     f.isGlobal = 1;
-    insert(table, functName->value.val_str, f);
 
     // Function parameters
     Node *params = functName->nextSibling;
     if (params) {
-        handleParams(params, n->symTable);
+        handleParams(params, n->symTable, &f.Value.value_funct);
     }
+
+    insert(table, functName->value.val_str, f);
 
     // Local variables
     Node *declVars = corpse->firstChild;
@@ -331,15 +365,20 @@ static void handleFunction(Node *n, HashTable *table) {
                     // Récupérer variable destination
                     Symbol *varDest = lookup(n->symTable, variableName->value.val_str);
                     if (!varDest) {
-                        printf("Erreur ligne %d : paramètre %s non déclaré\n",
+                        printf("Erreur ligne %d : variable %s non déclarée\n",
                             instr->lineno, variableName->value.val_str);
-                        semantic = 0;
+                        semanticErrorCount++;
                         break;
                     }
 
                     // Vérification type
                     if (!castCheck(varDest->typ, value.typ)) {
-                        printf("Avertissement ligne %d : conversion interdite de paramètre %s (int -> char)\n",
+                        printf("Avertissement ligne %d : conversion interdite de variable %s (int -> char)\n",
+                            instr->lineno, variableName->value.val_str);
+                        break;
+                    }
+                    if (!notCastFunction(varDest->typ, value.typ)) {
+                        printf("Avertissement ligne %d : conversion interdite de variable %s à une fonction.\n",
                             instr->lineno, variableName->value.val_str);
                         break;
                     }
@@ -347,16 +386,37 @@ static void handleFunction(Node *n, HashTable *table) {
                     Symbol finalValue = castSymbol(*varDest, value);
                     // Modifier la valeur dans la table
                     if (!lookupModify(n->symTable, variableName->value.val_str, finalValue)) {
-                        printf("Erreur ligne %d : modification du paramètre %s échoué\n",
+                        printf("Erreur ligne %d : modification de la variable %s échoué\n",
                             instr->lineno, variableName->value.val_str);
-                        semantic = 0;
+                        semanticErrorCount++;
                     }
                     break;
                 }
+                case appelFonct: {
+                    handleEval(instr, n->symTable);
+                    break;
+                }
                 default:
+                    printf("Test: %s\n", instr ? strToLabel(instr->label) : "null"); // TEST
                     break;
             }
         }
+    }
+}
+
+static void checkMain(HashTable *table) {
+    /*
+    Checks if the 'main' function exists, and returns an int.
+    */
+    Symbol *main = lookupFunction(table, "main");
+    if (!main){
+        printf("Erreur : pas de fonction main détectée\n");
+        semanticErrorCount++;
+        return;
+    }
+    if (main && main->Value.value_funct.returnType != RETURN_INT) {
+        printf("Erreur : la fonction main doit renvoyer un int\n");
+        semanticErrorCount++;
     }
 }
 
@@ -385,23 +445,10 @@ int buildSymbolTables(Node *n, HashTable *table) {
         default:
             break;
     }
-    return semantic;
-}
 
-void printAllTables(Node *n) {
-    /*
-    Prints all hash tables from nodes.
-    */
-    if (!n) return;
+    // printAllTables(n);
+    checkMain(table);
 
-    if (n->symTable) {
-        printf("==========================================================================\n");
-        printf("Table - %s\n", n->symTable->functionName ? n->symTable->functionName : "null");
-        printf("==========================================================================\n");
-        printHashTable(n->symTable);
-        printf("\n");
-    }
-
-    printAllTables(n->firstChild);
-    printAllTables(n->nextSibling);
+    printf("Erreurs sémantiques : %d\n", semanticErrorCount);
+    return semanticErrorCount ? 0 : 1; // Check s'il y a au moins une erreur sémantique
 }

@@ -19,11 +19,12 @@ typedef enum {
     SYM_FUNCTION
 } TypeValue;
 
-typedef enum {
-    EMPTY,
-    OCCUPIED,
-    DELETED
-} EntryState;
+typedef struct {
+    ReturnType returnType;
+
+    int numberParams;
+    TypeValue paramTypes[99];
+} FunctionInfo;
 
 typedef struct {
     TypeValue typ;
@@ -32,12 +33,18 @@ typedef struct {
         int value_int;
         char value_char;
         char* value_str;
-        ReturnType return_type;
+        FunctionInfo value_funct;
     } Value;
 
     int address;
     int isGlobal;
 } Symbol;
+
+typedef enum {
+    EMPTY,
+    OCCUPIED,
+    DELETED
+} EntryState;
 
 typedef struct {
     char* key;
@@ -55,11 +62,16 @@ typedef struct HashTable {
 
 void initHashTable(HashTable* h, HashTable* global, const char* name, int startingAdress);
 int insert(HashTable *h, const char* key, Symbol symbol);
+
 Symbol* lookup(HashTable *h, const char* key);
+Symbol* lookupFunction(HashTable *h, const char* key);
 Symbol* search(HashTable *h, const char* key);
+
 int lookupModify(HashTable *h, const char* key, Symbol newSymbol);
+
 int deleteH(HashTable *h, const char* key);
 void freeHashTable(HashTable *h);
+
 void printHashTable(HashTable *h);
 void addBuiltIns(HashTable *global);
 

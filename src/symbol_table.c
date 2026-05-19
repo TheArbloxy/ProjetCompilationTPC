@@ -59,14 +59,36 @@ int insert(HashTable *h, const char* key, Symbol symbol) {
 
 Symbol* search(HashTable *h, const char* key) {
     unsigned int index = hash(key);
+    HashEntry entry;
 
     for (int i = 0; i < TABLE_SIZE; i++) {
         unsigned int pos = (index + i) % TABLE_SIZE;
+        entry = h->table[pos];
 
         // SI trouvé
-        if (h->table[pos].state == OCCUPIED 
-            && h->table[pos].key != NULL
-            && strcmp(h->table[pos].key, key) == 0) {
+        if (entry.state == OCCUPIED 
+            && entry.key != NULL
+            && strcmp(entry.key, key) == 0
+            && !(entry.symbol.typ == SYM_FUNCTION || entry.symbol.typ == SYM_BUILTIN)) {
+            return &h->table[pos].symbol;
+        }
+    }
+    return NULL;
+}
+
+static Symbol* searchFunction(HashTable *h, const char* key) {
+    unsigned int index = hash(key);
+    HashEntry entry;
+
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        unsigned int pos = (index + i) % TABLE_SIZE;
+        entry = h->table[pos];
+
+        // SI fonction trouvé
+        if (entry.state == OCCUPIED 
+            && entry.key != NULL
+            && strcmp(entry.key, key) == 0
+            && (entry.symbol.typ == SYM_FUNCTION || entry.symbol.typ == SYM_BUILTIN)) {
             return &h->table[pos].symbol;
         }
     }
@@ -75,8 +97,20 @@ Symbol* search(HashTable *h, const char* key) {
 }
 
 Symbol* lookup(HashTable *h, const char* key) {
-    for (HashTable *tmp = h; tmp != NULL; tmp = tmp->parent) {
-        Symbol *s = search(tmp, key);
+    Symbol *s;
+    for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
+        s = search(tmp, key);
+        if (s) {
+            return s;
+        }
+    }
+    return NULL;
+}
+
+Symbol* lookupFunction(HashTable *h, const char* key) {
+    Symbol *s;
+    for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
+        s = searchFunction(tmp, key);
         if (s) {
             return s;
         }
@@ -86,14 +120,18 @@ Symbol* lookup(HashTable *h, const char* key) {
 
 static int modify(HashTable *h, const char* key, Symbol newSymbol) {
     unsigned int index = hash(key);
+    HashEntry entry;
 
     // Sondage linéaire
     for (int i = 0; i < TABLE_SIZE; i++) {
         unsigned int pos = (index + i) % TABLE_SIZE;
+        entry = h->table[pos];
+
         // SI trouvé
-        if (h->table[pos].state == OCCUPIED 
-            && h->table[pos].key != NULL
-            && strcmp(h->table[pos].key, key) == 0) {
+        if (entry.state == OCCUPIED 
+            && entry.key != NULL
+            && strcmp(entry.key, key) == 0
+            && !(entry.symbol.typ == SYM_FUNCTION || entry.symbol.typ == SYM_BUILTIN)) {
             h->table[pos].symbol = newSymbol;
             return 1;
         }
@@ -141,29 +179,38 @@ void printHashTable(HashTable *h) {
             case EMPTY:
             case DELETED:
                 break;
-            default:
-                printf("KEY = %-20s | TYPE = %-8s ", e->key, StringFromLabel[e->symbol.typ]);
-                printf("| %-6s ", e->symbol.isGlobal ? "Global" : "Local");
-                printf("| ADDRESS = %-3d ", e->symbol.address);
+            default: {
+                Symbol s = e->symbol;
 
-                switch(e->symbol.typ) {
+                printf("KEY = %-20s | TYPE = %-8s ", e->key, StringFromLabel[s.typ]);
+                printf("| %-6s ", s.isGlobal ? "Global" : "Local");
+                printf("| ADDRESS = %-3d ", s.address);
+
+                switch(s.typ) {
                     case SYM_INT:
-                        printf("| VALUE = %-3d ", e->symbol.Value.value_int);
+                        printf("| VALUE = %-3d ", s.Value.value_int);
                         break;
                     case SYM_CHAR:
-                        printf("| VALUE = %-3c ", e->symbol.Value.value_char);
+                        printf("| VALUE = %-3c ", s.Value.value_char);
                         break;
                     case SYM_STRING:
-                        printf("| VALUE = %-3s ", e->symbol.Value.value_str);
+                        printf("| VALUE = %-3s ", s.Value.value_str);
                         break;
                     case SYM_FUNCTION:
-                        printf("| RETURN TYPE = %-5s ", StringFromLabel[e->symbol.Value.return_type]);
+                    case SYM_BUILTIN:
+                        printf("| RETURN TYPE = %-5s ", StringFromLabel[s.Value.value_funct.returnType]);
+                        printf("| NUMBER PARAMS = %-5d", s.Value.value_funct.numberParams);
+
+                        for (int i = 0; i < s.Value.value_funct.numberParams; i++) {
+                            printf("%-5s", StringFromLabel[s.Value.value_funct.paramTypes[i]]);
+                        }
                     default:
                         break;
                 }
                 printf("\n");
                 isEmpty = 0;
                 break;
+            }
         }
     }
     if (isEmpty) printf("EMPTY TABLE\n");
@@ -191,11 +238,23 @@ void freeHashTable(HashTable *h) {
 extern void addBuiltIns(HashTable *global) {
     Symbol s = {0};
     s.typ = SYM_BUILTIN;
+    s.Value.value_funct.numberParams = 1;
+    s.Value.value_funct.returnType = RETURN_VOID;
     s.address = -1;
     s.isGlobal = 1;
 
+    s.Value.value_funct.paramTypes[0] = SYM_CHAR;
     insert(global, "putchar", s);
+
+    s.Value.value_funct.paramTypes[0] = SYM_INT;
     insert(global, "putint", s);
+
+    s.Value.value_funct.paramTypes[0] = SYM_NONE;
+
+    s.Value.value_funct.numberParams = 0;
+    s.Value.value_funct.returnType = RETURN_CHAR;
     insert(global, "getchar", s);
+
+    s.Value.value_funct.returnType = RETURN_INT;
     insert(global, "getint", s);
 }
