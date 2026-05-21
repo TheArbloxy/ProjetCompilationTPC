@@ -8,6 +8,7 @@
 #include "nasm_handler.h"
 #include "symbol_table.h"
 #include "symbol_handler.h"
+#include "helpers.h"
 extern int yylineno;
 extern char * yytext;
 int yylex();
@@ -397,7 +398,7 @@ int main(int argc, char **argv) {
     /* AST Tree */
     if (yyparse() == 0) {
         
-        /* Initiates and builds the symbol table */
+        /* Initiates and builds the symbol table & struct table */
         HashTable *global = calloc(1, sizeof(HashTable));
         initHashTable(global, NULL, "global", 0);
         addBuiltIns(global);
@@ -405,8 +406,8 @@ int main(int argc, char **argv) {
         /* If a semantic error is detected */
         if (!buildSymbolTables(node, global)) {
             printf("Erreur sémantique détectée, arrêt de la compilation.\n");
-            deleteTree(node);
-            return 2;
+            // deleteTree(node);
+            // return 2;
         }
         if (symtabs) {
             printAllTables(node);

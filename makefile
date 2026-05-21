@@ -14,6 +14,8 @@ TREE_H = $(SRC)/tree.h
 
 SYMB_C = $(SRC)/symbol_table.c
 SYMB_H = $(SRC)/symbol_table.h
+STRUCT_C = $(SRC)/struct_table.c
+STRUCT_H = $(SRC)/struct_table.h
 HELPERS_C = $(SRC)/helpers.c
 HELPERS_H = $(SRC)/helpers.h
 SHANDLER_C = $(SRC)/symbol_handler.c
@@ -34,7 +36,8 @@ OBJS = \
 	$(OBJ)/symbol_table.o \
 	$(OBJ)/helpers.o \
 	$(OBJ)/symbol_handler.o \
-	$(OBJ)/nasm_handler.o
+	$(OBJ)/nasm_handler.o \
+	$(OBJ)/struct_table.o
 
 # Compilateur
 CC = gcc
@@ -70,6 +73,9 @@ $(OBJ)/tree.o: $(TREE_C) $(TREE_H)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ)/symbol_table.o: $(SYMB_C) $(SYMB_H)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJ)/struct_table.o: $(STRUCT_C) $(STRUCT_H)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJ)/helpers.o: $(HELPERS_C) $(HELPERS_C)

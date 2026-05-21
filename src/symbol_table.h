@@ -1,17 +1,8 @@
 #ifndef __SYMBOL_H__
 #define __SYMBOL_H__
-#include <stdio.h>
+#include "struct_table.h"
 
 #define TABLE_SIZE 211
-
-typedef enum {
-    SYM_NONE,
-    SYM_INT,
-    SYM_CHAR,
-    SYM_STRING,
-    SYM_BUILTIN,
-    SYM_FUNCTION
-} TypeValue;
 
 typedef struct {
     TypeValue returnType;
@@ -30,15 +21,12 @@ typedef struct {
         FunctionInfo value_funct;
     } Value;
 
+    char* structName;
+    int size;
+
     int address;
     int isGlobal;
 } Symbol;
-
-typedef enum {
-    EMPTY,
-    OCCUPIED,
-    DELETED
-} EntryState;
 
 typedef struct {
     char* key;
@@ -51,6 +39,7 @@ typedef struct HashTable {
     int relativeAddress;
     
     HashEntry table[TABLE_SIZE];
+    StructDef structs[TABLE_SIZE]; // Contains all structs from a scope
     struct HashTable *parent;
 } HashTable;
 
@@ -68,5 +57,7 @@ void freeHashTable(HashTable *h);
 
 void printHashTable(HashTable *h);
 void addBuiltIns(HashTable *global);
+
+StructDef* lookupStruct(HashTable *table, const char* name);
 
 #endif

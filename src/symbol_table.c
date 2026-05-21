@@ -1,10 +1,7 @@
-#include <math.h>
-#include <string.h>
-#include <stdlib.h>
 #include "symbol_table.h"
 
 static const char *StringFromLabel[] = {
-  "Void", "Int", "Char", "String", "Built-in", "Function"
+  "Void", "Int", "Char", "String", "Built-in", "Function", "Struct"
 };
 
 static unsigned int hash(const char* str) {
@@ -30,6 +27,7 @@ void initHashTable(HashTable* h, HashTable* global, const char* name, int starti
         h->table[i].state = EMPTY;
     }
     h->parent = global;
+    initStructScope(h->structs, startingAdress);
 }
 
 int insert(HashTable *h, const char* key, Symbol symbol) {
@@ -213,7 +211,7 @@ void printHashTable(HashTable *h) {
             }
         }
     }
-    if (isEmpty) printf("EMPTY TABLE\n");
+    if (isEmpty) printf("EMPTY VARIABLE TABLE\n");
 }
 
 void freeHashTable(HashTable *h) {
@@ -229,9 +227,14 @@ void freeHashTable(HashTable *h) {
                 free(h->table[i].symbol.Value.value_str);
             }
 
+            if (h->table[i].symbol.structName) {
+                free(h->table[i].symbol.structName);
+            }
+
             h->table[i].state = DELETED;
         }
     }
+    freeStructScope(h->structs);
     free(h);
 }
 
@@ -243,18 +246,44 @@ extern void addBuiltIns(HashTable *global) {
     s.address = -1;
     s.isGlobal = 1;
 
+    // Putchar
     s.Value.value_funct.paramTypes[0] = SYM_CHAR;
     insert(global, "putchar", s);
 
+    // Putint
     s.Value.value_funct.paramTypes[0] = SYM_INT;
     insert(global, "putint", s);
 
     s.Value.value_funct.paramTypes[0] = SYM_NONE;
 
+    // Getchar
     s.Value.value_funct.numberParams = 0;
     s.Value.value_funct.returnType = SYM_CHAR;
     insert(global, "getchar", s);
 
+    // Getint
     s.Value.value_funct.returnType = SYM_INT;
     insert(global, "getint", s);
+}
+
+// STRUCTS //
+
+StructDef* lookupStruct(HashTable *table, const char* name) {
+    for (HashTable *tmp = table; table; table = table->parent) {
+        unsigned int index = hash(name);
+        StructDef entry;
+
+        for (int i = 0; i < TABLE_SIZE; i++) {
+            unsigned int pos = (index + i) % TABLE_SIZE;
+            entry = tmp->structs[pos];
+
+            // SI trouvé
+            if (entry.state == OCCUPIED 
+                && entry.structName != NULL
+                && strcmp(entry.structName, name)){
+                return &tmp->structs[pos];
+            }
+        }
+    }
+    return NULL;
 }

@@ -1,14 +1,15 @@
-char x;
-
 int foo(int a, int b) {
-    return 10 + 5;
+    return a + b;
 }
 
 void foo2(void) {}
 
 int main(void) {
-    x = foo2();
-    foo(10, 5);
+    int a, b, c;
+    a = 10;
+    b = 5;
+
+    c = foo(10, 5);
     putchar('\n');
     return 1;
 }

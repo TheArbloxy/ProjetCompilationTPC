@@ -1,6 +1,7 @@
 #ifndef __HELPERS_H__
 #define __HELPERS_H__
 #include "symbol_table.h"
+#include "struct_table.h"
 #include "tree.h"
 
 // HELPERS SYMBOL HANDLER //

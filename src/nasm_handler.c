@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "nasm_handler.h"
 
 static int labelCounter = 0;
@@ -514,6 +517,7 @@ void genGlobalVariables(HashTable* h, FILE *f) {
                 case SYM_FUNCTION:
                 case SYM_NONE:
                 case SYM_STRING:
+                case SYM_STRUCT:
                     break;
                 case SYM_INT:
                 case SYM_CHAR:

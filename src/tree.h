@@ -4,6 +4,7 @@
 #define __TREE_H__
 
 #include "symbol_table.h"
+#include "struct_table.h"
 
 typedef enum {
   prog,
