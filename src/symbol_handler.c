@@ -263,23 +263,88 @@ static Symbol handleEval(Node *n, HashTable *table) {
 
             } else if (s->Value.value_funct.numberParams < numberArgs(arguments)) {
                 printf("Erreur ligne %d : trop d'arguments à la fonction %s, %d expecté, %d reçu\n",
-                       functionName->lineno ,functionName->value.val_str,
+                       functionName->lineno, functionName->value.val_str,
                         s->Value.value_funct.numberParams, numberArgs(arguments));
                 semanticErrorCount++;
 
                 return makeIntSymbol(0);
             }
             
-            handleEval(arguments->firstChild, table);
+            // Check arguments
+            int i = 0;
+            for (Node *arg = arguments->firstChild; arg; arg = arg->nextSibling, i++) {
+                Symbol a = handleEval(arguments->firstChild, table);
+                if (!castCheck(s->Value.value_funct.paramTypes[i], a.typ)) {
+                    printf("Erreur ligne %d : conversion interdite d'argument de la fonction %s\n",
+                        functionName->lineno, functionName->value.val_str);
+                    semanticErrorCount++;
+                }
+
+                return makeIntSymbol(0);
+            }
 
             return *s;
         }
-
         default:
             printf("Label non géré : %s\n",
                    strToLabel(n->label));
 
             return makeIntSymbol(0);
+    }
+}
+
+static void handleReturnType(Node *n, Node *functionName, Symbol function, HashTable *table) {
+    /*
+    Handles a return case from the AST, to the symbol tree.
+    */
+    Symbol ident = handleEval(n->firstChild, table);
+    TypeValue returnType = function.Value.value_funct.returnType;
+
+    if (!castCheck(returnType, ident.typ)) {
+        printf("Avertissement ligne %d : conversion interdite de valeur de retour de la fonction %s\n",
+            n->lineno, functionName->value.val_str);
+    }
+}
+
+static void handleAssign(Node *n, Node *instr, HashTable *table) {
+    /*
+    Handles an assign case from the AST, to the symbol tree.
+    */
+    Node *lhs = instr->firstChild;
+    Node *rhs = lhs->nextSibling;
+    
+    // Récupérer la valeur de l'expression
+    Symbol value = handleEval(rhs, n->symTable);
+    Node *variableName = lhs->firstChild;
+
+    // Récupérer variable destination
+    Symbol *varDest = lookup(n->symTable, variableName->value.val_str);
+    if (!varDest) {
+        printf("Erreur ligne %d : variable %s non déclarée\n",
+            instr->lineno, variableName->value.val_str);
+        semanticErrorCount++;
+        return;
+    }
+
+    // Vérification type
+    if (!castCheck(varDest->typ, value.typ)) {
+        printf("Avertissement ligne %d : conversion interdite de variable %s (int -> char)\n",
+            instr->lineno, variableName->value.val_str);
+        return;
+    }
+    if ((value.typ == SYM_FUNCTION || value.typ == SYM_BUILTIN) && value.Value.value_funct.returnType == SYM_NONE) {
+        printf("Erreur ligne %d : variable %s assigné à un type incompatible 'void'\n",
+            instr->lineno, variableName->value.val_str);
+        semanticErrorCount++;
+        return;
+    }
+
+    Symbol finalValue = castSymbol(*varDest, value);
+    // Modifier la valeur dans la table
+    if (!lookupModify(n->symTable, variableName->value.val_str, finalValue)) {
+        printf("Erreur ligne %d : modification de la variable %s échoué\n",
+            instr->lineno, variableName->value.val_str);
+        semanticErrorCount++;
     }
 }
 
@@ -293,6 +358,8 @@ static void handleFunction(Node *n, HashTable *table) {
 
     Node *functType = signature->firstChild; // Function type
     Node *functName = functType->nextSibling; // Function name
+
+    int hasReturn = 0;
 
     // printf("LABEL TYPE : %s\n", functName ? functName->value.val_str : "null"); // TEST
 
@@ -318,13 +385,13 @@ static void handleFunction(Node *n, HashTable *table) {
     f.typ = SYM_FUNCTION;
     switch (functType->label) {
         case typeInt:
-            f.Value.value_funct.returnType = RETURN_INT;
+            f.Value.value_funct.returnType = SYM_INT;
             break;
         case typeChar:
-            f.Value.value_funct.returnType = RETURN_CHAR;
+            f.Value.value_funct.returnType = SYM_CHAR;
             break;
         default:
-            f.Value.value_funct.returnType = RETURN_VOID;
+            f.Value.value_funct.returnType = SYM_NONE;
             break;
     }
 
@@ -355,51 +422,45 @@ static void handleFunction(Node *n, HashTable *table) {
         for (Node *instr = suiteInstr->firstChild; instr; instr = instr->nextSibling) {
             switch (instr->label) {
                 case assign: {
-                    Node *lhs = instr->firstChild;
-                    Node *rhs = lhs->nextSibling;
-                    
-                    // Récupérer la valeur de l'expression
-                    Symbol value = handleEval(rhs, n->symTable);
-                    Node *variableName = lhs->firstChild;
-
-                    // Récupérer variable destination
-                    Symbol *varDest = lookup(n->symTable, variableName->value.val_str);
-                    if (!varDest) {
-                        printf("Erreur ligne %d : variable %s non déclarée\n",
-                            instr->lineno, variableName->value.val_str);
-                        semanticErrorCount++;
-                        break;
-                    }
-
-                    // Vérification type
-                    if (!castCheck(varDest->typ, value.typ)) {
-                        printf("Avertissement ligne %d : conversion interdite de variable %s (int -> char)\n",
-                            instr->lineno, variableName->value.val_str);
-                        break;
-                    }
-                    if (!notCastFunction(varDest->typ, value.typ)) {
-                        printf("Avertissement ligne %d : conversion interdite de variable %s à une fonction.\n",
-                            instr->lineno, variableName->value.val_str);
-                        break;
-                    }
-
-                    Symbol finalValue = castSymbol(*varDest, value);
-                    // Modifier la valeur dans la table
-                    if (!lookupModify(n->symTable, variableName->value.val_str, finalValue)) {
-                        printf("Erreur ligne %d : modification de la variable %s échoué\n",
-                            instr->lineno, variableName->value.val_str);
-                        semanticErrorCount++;
-                    }
+                    handleAssign(n, instr, n->symTable);
                     break;
                 }
                 case appelFonct: {
                     handleEval(instr, n->symTable);
                     break;
                 }
+                case voidSt: {
+                    // Check si c'est une fonction void
+                    if (f.Value.value_funct.returnType != SYM_NONE) {
+                        printf("Erreur ligne %d : La fonction non-void %s devrait renvoyer une valeur\n",
+                            instr->lineno, functName->value.val_str);
+                        semanticErrorCount++;
+                    }
+                    break;
+                }
+                case returnSt: {
+                     // Check si c'est une fonction void
+                    if (f.Value.value_funct.returnType == SYM_NONE) {
+                        printf("Erreur ligne %d : La fonction void %s ne devrait pas renvoyer une valeur\n",
+                            instr->lineno, functName->value.val_str);
+                        semanticErrorCount++;
+                    } else {
+                        handleReturnType(instr, functName, f, n->symTable);
+                        hasReturn = 1;
+                    }
+                    break;
+                }
                 default:
                     printf("Test: %s\n", instr ? strToLabel(instr->label) : "null"); // TEST
                     break;
             }
+        }
+    }
+
+    if (f.Value.value_funct.returnType != SYM_NONE) {
+        if (!hasReturn) {
+            printf("Avertissement ligne %d : La fonction non-void %s ne renvoie pas de valeur\n",
+                n->lineno, functName->value.val_str);
         }
     }
 }
@@ -414,7 +475,7 @@ static void checkMain(HashTable *table) {
         semanticErrorCount++;
         return;
     }
-    if (main && main->Value.value_funct.returnType != RETURN_INT) {
+    if (main && main->Value.value_funct.returnType != SYM_INT) {
         printf("Erreur : la fonction main doit renvoyer un int\n");
         semanticErrorCount++;
     }

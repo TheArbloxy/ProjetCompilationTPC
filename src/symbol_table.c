@@ -239,7 +239,7 @@ extern void addBuiltIns(HashTable *global) {
     Symbol s = {0};
     s.typ = SYM_BUILTIN;
     s.Value.value_funct.numberParams = 1;
-    s.Value.value_funct.returnType = RETURN_VOID;
+    s.Value.value_funct.returnType = SYM_NONE;
     s.address = -1;
     s.isGlobal = 1;
 
@@ -252,9 +252,9 @@ extern void addBuiltIns(HashTable *global) {
     s.Value.value_funct.paramTypes[0] = SYM_NONE;
 
     s.Value.value_funct.numberParams = 0;
-    s.Value.value_funct.returnType = RETURN_CHAR;
+    s.Value.value_funct.returnType = SYM_CHAR;
     insert(global, "getchar", s);
 
-    s.Value.value_funct.returnType = RETURN_INT;
+    s.Value.value_funct.returnType = SYM_INT;
     insert(global, "getint", s);
 }

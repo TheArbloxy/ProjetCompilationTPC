@@ -1,4 +1,5 @@
 section .bss
+    x: resb 1
 
 global _start
 
@@ -19,34 +20,35 @@ _foo:
     sub rsp, 16
     mov dword [rbp - 4], edi
     mov dword [rbp - 8], esi
-    mov dword [rbp - 12], edx
-    mov eax, dword [rbp - 4]
-    push rax
-    mov eax, dword [rbp - 8]
-    push rax
+    push 10
+    push 5
     pop rbx
     pop rax
     add rax, rbx
     push rax
-    mov eax, dword [rbp - 12]
-    push rax
-    pop rbx
     pop rax
-    add rax, rbx
-    push rax
-    pop rdi
-    call my_putint
+    mov rsp, rbp
+    pop rbp
+    ret
+_foo2:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 16
 _main:
     push rbp
     mov rbp, rsp
     sub rsp, 16
-    push 1
+    call _foo2
+    push rax
+    pop rsi
+    mov [x], esi
+    push 10
     pop rdi
     call _foo
-    push 1
+    push 10
     pop rdi
-    call my_putint
-    push 0
+    call my_putchar
+    push 1
     pop rax
     mov rsp, rbp
     pop rbp

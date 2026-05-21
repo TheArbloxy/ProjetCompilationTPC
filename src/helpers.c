@@ -52,13 +52,6 @@ extern int castCheck(TypeValue LValue, TypeValue RValue) {
     return !(LValue == SYM_CHAR && RValue == SYM_INT);
 } 
 
-extern int notCastFunction(TypeValue LValue, TypeValue RValue) {
-    /*
-    Checks if not (function -> int / char), and vice-versa.
-    */
-    return !((LValue == SYM_INT || LValue == SYM_CHAR) && (RValue == SYM_FUNCTION || RValue == SYM_BUILTIN));
-}
-
 extern Symbol castSymbol(Symbol LValue, Symbol RValue) {
     /*
     Handles a symbol cast.

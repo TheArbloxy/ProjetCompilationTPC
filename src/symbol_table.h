@@ -5,12 +5,6 @@
 #define TABLE_SIZE 211
 
 typedef enum {
-    RETURN_VOID,
-    RETURN_INT,
-    RETURN_CHAR
-} ReturnType;
-
-typedef enum {
     SYM_NONE,
     SYM_INT,
     SYM_CHAR,
@@ -20,7 +14,7 @@ typedef enum {
 } TypeValue;
 
 typedef struct {
-    ReturnType returnType;
+    TypeValue returnType;
 
     int numberParams;
     TypeValue paramTypes[99];
