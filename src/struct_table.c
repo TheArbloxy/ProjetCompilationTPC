@@ -94,7 +94,7 @@ StructEntry* lookupField(StructDef *def, const char* name) {
         // SI trouvé
         if (entry.state == OCCUPIED 
             && entry.key != NULL
-            && strcmp(entry.key, name)){
+            && strcmp(entry.key, name) == 0){
             return &def->fields[pos];
         }
     }

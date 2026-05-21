@@ -19,8 +19,14 @@ _main:
     mov rbp, rsp
     sub rsp, 16
     push 97
+    pop rsi
+    mov dword [rbp - 4], esi
     push 4
+    pop rsi
+    mov dword [rbp - 4], esi
     push 2
+    pop rsi
+    mov dword [rbp - 4], esi
     push 0
     pop rax
     mov rsp, rbp

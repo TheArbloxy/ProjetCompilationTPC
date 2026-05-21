@@ -202,6 +202,10 @@ void printHashTable(HashTable *h) {
                         for (int i = 0; i < s.Value.value_funct.numberParams; i++) {
                             printf("%-5s", StringFromLabel[s.Value.value_funct.paramTypes[i]]);
                         }
+                        break;
+                    case SYM_STRUCT:
+                        printf("| STRUCT = %-20s | TOTAL SIZE = %-5d ", s.structName, s.size);
+                        break;
                     default:
                         break;
                 }
@@ -269,18 +273,18 @@ extern void addBuiltIns(HashTable *global) {
 // STRUCTS //
 
 StructDef* lookupStruct(HashTable *table, const char* name) {
-    for (HashTable *tmp = table; table; table = table->parent) {
-        unsigned int index = hash(name);
+    unsigned int index = hash(name);
+    
+    for (HashTable *tmp = table; tmp; tmp = table->parent) {
         StructDef entry;
 
         for (int i = 0; i < TABLE_SIZE; i++) {
             unsigned int pos = (index + i) % TABLE_SIZE;
             entry = tmp->structs[pos];
-
             // SI trouvé
             if (entry.state == OCCUPIED 
                 && entry.structName != NULL
-                && strcmp(entry.structName, name)){
+                && strcmp(entry.structName, name) == 0){
                 return &tmp->structs[pos];
             }
         }
