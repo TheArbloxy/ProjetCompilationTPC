@@ -4,6 +4,8 @@
 
 #define TABLE_SIZE 211
 
+// Variables / functions
+
 typedef struct {
     TypeValue returnType;
 
@@ -21,9 +23,6 @@ typedef struct {
         FunctionInfo value_funct;
     } Value;
 
-    char* structName;
-    int size;
-
     int address;
     int isGlobal;
 } Symbol;
@@ -34,11 +33,27 @@ typedef struct {
     EntryState state;
 } HashEntry;
 
+// Struct variables
+
+typedef struct {
+    char* structName;
+    int size;
+    int address;
+    int isGlobal;
+} SymbolS;
+
+typedef struct {
+    char* key;
+    SymbolS symbol;
+    EntryState state;
+} HashSEntry;
+
 typedef struct HashTable {
     char* functionName;
     int relativeAddress;
     
-    HashEntry table[TABLE_SIZE];
+    HashEntry table[TABLE_SIZE]; // Variables / functions
+    HashSEntry tableS[TABLE_SIZE]; // Struct variables
     StructDef structs[TABLE_SIZE]; // Contains all structs from a scope
     struct HashTable *parent;
 } HashTable;
@@ -55,10 +70,14 @@ int lookupModify(HashTable *h, const char* key, Symbol newSymbol);
 int deleteH(HashTable *h, const char* key);
 void freeHashTable(HashTable *h);
 
-void printHashTable(HashTable *h);
+void printVariablesAndFunctions(HashTable *h);
+void printStructureVariables(HashTable *h);
+
 void addBuiltIns(HashTable *global);
 
 StructDef* lookupStruct(HashTable *table, const char* name);
 int insertStruct(HashTable *table, StructDef st);
+
+int insertStructVariable(HashTable *h, const char* key, SymbolS symbol);
 
 #endif

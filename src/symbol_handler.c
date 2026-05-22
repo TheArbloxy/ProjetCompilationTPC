@@ -62,6 +62,44 @@ static void handleDeclStruct(Node *n, HashTable *table) {
             break;
         }
         case declarateurs: {
+            StructDef *def = lookupStruct(table, ident->value.val_str);
+            if (!def) {
+                printf("Erreur ligne %d : structure %s non déclarée\n",
+                ident->lineno, ident->value.val_str);
+                semanticErrorCount++;
+                break;
+            }
+
+            // Déclarateurs variables
+            for (Node *id = declStr->firstChild; id; id = id->nextSibling) {
+                SymbolS s = {0};
+                s.structName = strdup(def->structName);
+                s.size = def->totalSize;
+
+                printf("TYPE STRUCT = %s | SIZE = %d\n", s.structName, s.size);
+                printf("VAR = %s\n", id->value.val_str);
+
+                // Check scope
+                if (isGlobalScope(table)) {
+                    s.address = globalAddress;
+                    s.isGlobal = 1;
+                } else {
+                    s.address = table->relativeAddress;
+                    s.isGlobal = 0;
+                }
+
+                if (!insertStructVariable(table, id->value.val_str, s)) {
+                    printf("Erreur ligne %d : variable %s déjà déclarée\n",
+                        id->lineno, id->value.val_str);
+                    semanticErrorCount++;
+                } else {
+                    if (isGlobalScope(table)) {
+                        s.address += s.size;
+                    } else {
+                        table->relativeAddress += s.size;
+                    }
+                }
+            }
             break;
         }
         default:

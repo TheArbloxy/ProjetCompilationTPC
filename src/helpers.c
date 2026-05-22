@@ -12,8 +12,15 @@ void printAllTables(Node *n) {
         printf("==========================================================================\n");
         printf("Table - %s\n", n->symTable->functionName ? n->symTable->functionName : "null");
         printf("==========================================================================\n");
-        printHashTable(n->symTable);
+        printf("Variables et fonctions :\n");
+        printVariablesAndFunctions(n->symTable);
         printf("\n");  
+
+        printf("Variables structures :\n");
+        printStructureVariables(n->symTable);
+        printf("\n");
+
+        printf("Structures déclarées :\n");
         printStructScope(n->symTable->structs);
         printf("\n");  
     }

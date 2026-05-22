@@ -141,23 +141,32 @@ void freeStructScope(StructDef *s) {
     // Free toutes les structures de la scope
     for (size_t i = 0; i < TABLE_SIZE; i++) {
         if (s[i].state == OCCUPIED) {
-            free(s[i].structName);
+            if (s[i].structName) {
+                free(s[i].structName);
+                s[i].structName = NULL;
+            }
 
             // Free tous les champs d'une structure
-            for (size_t j = 0; i < TABLE_SIZE; i++) {
+            
+            for (size_t j = 0; j < TABLE_SIZE; j++) {
                 if (s[i].fields[j].state == OCCUPIED) {
                     free(s[i].fields[j].key);
-
+                    s[i].fields[j].key = NULL;
+                    
                     if (s[i].fields[j].symbol.typ == SYM_STRING 
                         && s[i].fields[j].symbol.Value.value_str != NULL) {
                         free(s[i].fields[j].symbol.Value.value_str);
+                        s[i].fields[j].symbol.Value.value_str = NULL;
                     }
 
                     if (s[i].fields[j].symbol.structName) {
                         free(s[i].fields[j].symbol.structName);
+                        s[i].fields[j].symbol.structName = NULL;
                     }
+                    
                 }
             }
+            
 
             s[i].state = DELETED;
         }

@@ -3,7 +3,7 @@ struct point {
     int b;
 };
 
-struct point p;
+struct point p, p2;
 
 int main(void) {
     p.a = 10;

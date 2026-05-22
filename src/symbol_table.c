@@ -26,6 +26,10 @@ void initHashTable(HashTable* h, HashTable* global, const char* name, int starti
         h->table[i].key = NULL;
         h->table[i].state = EMPTY;
     }
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        h->tableS[i].key = NULL;
+        h->tableS[i].state = EMPTY;
+    }
     h->parent = global;
     initStructScope(h->structs, startingAdress);
 }
@@ -167,7 +171,7 @@ int deleteH(HashTable *h, const char* key) {
     return 0;
 }
 
-void printHashTable(HashTable *h) {
+void printVariablesAndFunctions(HashTable *h) {
     int isEmpty = 1; // Flag checking if the table is empty
     printf("RELATIVE = %-20d\n", h->relativeAddress);
 
@@ -203,9 +207,6 @@ void printHashTable(HashTable *h) {
                             printf("%-5s", StringFromLabel[s.Value.value_funct.paramTypes[i]]);
                         }
                         break;
-                    case SYM_STRUCT:
-                        printf("| STRUCT = %-20s | TOTAL SIZE = %-5d ", s.structName, s.size);
-                        break;
                     default:
                         break;
                 }
@@ -218,26 +219,69 @@ void printHashTable(HashTable *h) {
     if (isEmpty) printf("EMPTY VARIABLE TABLE\n");
 }
 
+void printStructureVariables(HashTable *h) {
+    int isEmpty = 1; // Flag checking if the table is empty
+
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        HashSEntry *e = &h->tableS[i];
+        switch(e->state) {
+            case EMPTY:
+            case DELETED:
+                break;
+            default: {
+                SymbolS s = e->symbol;
+
+                printf("KEY = %-20s ", e->key);
+                printf("| %-6s ", s.isGlobal ? "Global" : "Local");
+                printf("| ADDRESS = %-3d ", s.address);
+
+                printf("| STRUCT = %-20s | TOTAL SIZE = %-5d ", s.structName, s.size);
+                printf("\n");
+                isEmpty = 0;
+                break;
+            }
+        }
+    }
+    if (isEmpty) printf("EMPTY STRUCTURE VARIABLE TABLE\n"); 
+} 
+
+
 void freeHashTable(HashTable *h) {
     if (!h) return;
 
-    free(h->functionName);
+    if (h->functionName) {
+        free(h->functionName);
+        h->functionName = NULL;
+    }
 
     for (size_t i = 0; i < TABLE_SIZE; i++) {
         if (h->table[i].state == OCCUPIED) {
             free(h->table[i].key);
+            h->table[i].key = NULL;
 
             if (h->table[i].symbol.typ == SYM_STRING && h->table[i].symbol.Value.value_str != NULL) {
                 free(h->table[i].symbol.Value.value_str);
-            }
-
-            if (h->table[i].symbol.structName) {
-                free(h->table[i].symbol.structName);
+                h->table[i].symbol.Value.value_str = NULL;
             }
 
             h->table[i].state = DELETED;
         }
     }
+    
+    for (size_t i = 0; i < TABLE_SIZE; i++) {
+        if (h->tableS[i].state == OCCUPIED) {
+            free(h->tableS[i].key);
+            h->tableS[i].key = NULL;
+
+            if (h->tableS[i].symbol.structName) {
+                free(h->tableS[i].symbol.structName);
+                h->tableS[i].symbol.structName = NULL;
+            }
+
+            h->tableS[i].state = DELETED;
+        }
+    }
+
     freeStructScope(h->structs);
     free(h);
 }
@@ -313,6 +357,33 @@ int insertStruct(HashTable *table, StructDef st) {
         // Déjà dans la hash map
         } else {
             if (table->structs[pos].structName && strcmp(table->structs[pos].structName, st.structName) == 0) {
+                return 0;
+            }
+        }
+    }
+    // Table pleine
+    return 0;
+}
+
+// STRUCT VARIABLES
+
+int insertStructVariable(HashTable *h, const char* key, SymbolS symbol) {
+    unsigned int index = hash(key);
+
+    // Sondage linéaire
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        unsigned int pos = (index + i) % TABLE_SIZE;
+        // Place libre
+        if (h->tableS[pos].state != OCCUPIED) {
+            h->tableS[pos].key = strdup(key);
+            h->tableS[pos].symbol = symbol;
+            h->tableS[pos].state = OCCUPIED;
+
+            // printf("INSERTED : %s\n", h->table[pos].key);
+            return 1;
+        // Déjà dans la hash map
+        } else {
+            if (strcmp(h->tableS[pos].key, key) == 0) {
                 return 0;
             }
         }
