@@ -139,11 +139,9 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
                     switch (typeNode->label) {
                         case typeInt:
                             s.typ = SYM_INT;
-                            s.Value.value_int = id->value.val_int;
                             break;
                         case typeChar:
                             s.typ = SYM_CHAR;
-                            s.Value.value_char = id->value.val_char;
                             break;
                         default:
                             s.typ = SYM_NONE;
@@ -245,111 +243,15 @@ static Symbol handleEval(Node *n, HashTable *table) {
         case id: {
             return makeIntSymbol(n->value.val_int);
         }
-        // Opérations binaires
-        case Exp:
-        case TB:
-        case FB:
-        case M:
-        case E:
-        case T: {
-
-            Node *left = n->firstChild;
-            Node *op = left->nextSibling;
-            Node *right = op->nextSibling;
-
-            Symbol s1 = handleEval(left, table);
-            Symbol s2 = handleEval(right, table);
-
-            Symbol result = {0};
-            result.typ = SYM_INT;
-
-            switch (op->label) {
-
-                case add:
-                    result.Value.value_int =
-                        s1.Value.value_int +
-                        s2.Value.value_int;
-                    break;
-
-                case sub:
-                    result.Value.value_int =
-                        s1.Value.value_int -
-                        s2.Value.value_int;
-                    break;
-
-                case mul:
-                    result.Value.value_int =
-                        s1.Value.value_int *
-                        s2.Value.value_int;
-                    break;
-
-                case divstar:
-                    result.Value.value_int =
-                        s1.Value.value_int /
-                        s2.Value.value_int;
-                    break;
-
-                case mod:
-                    result.Value.value_int =
-                        s1.Value.value_int %
-                        s2.Value.value_int;
-                    break;
-
-                case equals:
-                    result.Value.value_int =
-                        (s1.Value.value_int ==
-                         s2.Value.value_int);
-                    break;
-
-                case notEquals:
-                    result.Value.value_int =
-                        (s1.Value.value_int !=
-                         s2.Value.value_int);
-                    break;
-
-                case orderInf:
-                    result.Value.value_int =
-                        (s1.Value.value_int <
-                         s2.Value.value_int);
-                    break;
-
-                case orderSup:
-                    result.Value.value_int =
-                        (s1.Value.value_int >
-                         s2.Value.value_int);
-                    break;
-
-                case andExp:
-                    result.Value.value_int =
-                        (s1.Value.value_int &&
-                         s2.Value.value_int);
-                    break;
-
-                case orExp:
-                    result.Value.value_int =
-                        (s1.Value.value_int ||
-                         s2.Value.value_int);
-                    break;
-
-                default:
-                    printf("Operateur inconnu\n");
-                    break;
-            }
-
-
-            return result;
-        }
         // Opérations unaires
         case unaryminus: {
             Symbol s = handleEval(n->firstChild, table);
-            s.Value.value_int = -s.Value.value_int;
             return s;
         }
         case unaryplus:
             return handleEval(n->firstChild, table);
         case notInstr: {
             Symbol s = handleEval(n->firstChild, table);
-            s.Value.value_int = !s.Value.value_int;
             return s;
         }
         // Accès à un champ
@@ -467,13 +369,7 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
         return;
     }
 
-    Symbol finalValue = castSymbol(*varDest, value);
-    // Modifier la valeur dans la table
-    if (!lookupModify(n->symTable, variableName->value.val_str, finalValue)) {
-        printf("Erreur ligne %d : modification de la variable %s échoué\n",
-            instr->lineno, variableName->value.val_str);
-        semanticErrorCount++;
-    }
+    castSymbol(*varDest, value);
 }
 
 static void handleFunction(Node *n, HashTable *table) {

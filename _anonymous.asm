@@ -2,6 +2,15 @@ section .bss
     __charinput resb 1
     __buffer resb 1
     __input resb 1
+    punct: resb 1
+    somme: resd 1
+    reste: resd 1
+    quotient: resd 1
+    difference: resd 1
+    letter: resb 1
+    digit: resb 1
+    uppercase: resd 1
+    produit: resd 1
 
 global _start
 
@@ -16,9 +25,52 @@ _main:
     push rbp
     mov rbp, rsp
     sub rsp, 16
-    push 10
+    push 12
+    pop rsi
+    mov [somme], esi
+    push 24
+    pop rsi
+    mov [produit], esi
+    push 24
+    push 12
+    pop rbx
+    pop rax
+    cqo
+    idiv rbx
+    push rax
+    pop rsi
+    mov [quotient], esi
+    push 99
+    pop rsi
+    mov [letter], esi
+    push 48
+    pop rsi
+    mov [digit], esi
+    mov eax, [letter]
+    push rax
+    push 65
+    push 97
+    pop rbx
+    pop rax
+    sub rax, rbx
+    push rax
+    pop rbx
+    pop rax
+    add rax, rbx
+    push rax
+    pop rsi
+    mov [uppercase], esi
+    call my_getint
+    push rax
+    pop rsi
+    mov [reste], esi
+    mov eax, [reste]
+    push rax
     pop rdi
     call my_putint
+    push 10
+    pop rdi
+    call my_putchar
     push 0
     pop rax
     mov rsp, rbp

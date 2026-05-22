@@ -35,7 +35,6 @@ extern Symbol makeIntSymbol(int v) {
     */
     Symbol s = {0};
     s.typ = SYM_INT;
-    s.Value.value_int = v;
     s.address = -1;
     s.isGlobal = 0;
     return s;
@@ -47,7 +46,6 @@ extern Symbol makeCharSymbol(char c) {
     */
     Symbol s = {0};
     s.typ = SYM_CHAR;
-    s.Value.value_char = c;
     s.address = -1;
     s.isGlobal = 0;
     return s;
@@ -67,22 +65,6 @@ extern Symbol castSymbol(Symbol LValue, Symbol RValue) {
     */
     Symbol result = {0};
     result.typ = LValue.typ;
-
-    switch (LValue.typ) {
-        case SYM_INT:
-            // Cast from a char to an int
-            if (RValue.typ == SYM_CHAR) {
-                result.Value.value_int = (int)RValue.Value.value_char;
-            } else {
-                result.Value.value_int = RValue.Value.value_int;
-            }
-            break;
-        case SYM_CHAR:
-            result.Value.value_char = RValue.Value.value_char;
-            break;
-        default:
-            break;
-    }
 
     // Gets the address and the global variable flag from the src to the result.
     result.address = LValue.address;

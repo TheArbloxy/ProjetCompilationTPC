@@ -102,17 +102,8 @@ static void printStructTable(StructDef *s) {
                 printf("| ADDRESS = %-3d | SIZE = %-3d ", e->offset, e->size);
 
                 switch(st.typ) {
-                    case SYM_INT:
-                        printf("| VALUE = %-3d ", st.Value.value_int);
-                        break;
-                    case SYM_CHAR:
-                        printf("| VALUE = %-3c ", st.Value.value_char);
-                        break;
-                    case SYM_STRING:
-                        printf("| VALUE = %-3s ", st.Value.value_str);
-                        break;
                     case SYM_STRUCT:
-                        printf("| STRUCT = %-10s ", st.Value.value_str);
+                        printf("| STRUCT = %-10s ", st.structName);
                         break;
                     default:
                         break;
@@ -155,12 +146,6 @@ void freeStructScope(StructDef *s) {
                 if (s[i].fields[j].state == OCCUPIED) {
                     free(s[i].fields[j].key);
                     s[i].fields[j].key = NULL;
-                    
-                    if (s[i].fields[j].symbol.typ == SYM_STRING 
-                        && s[i].fields[j].symbol.Value.value_str != NULL) {
-                        free(s[i].fields[j].symbol.Value.value_str);
-                        s[i].fields[j].symbol.Value.value_str = NULL;
-                    }
 
                     if (s[i].fields[j].symbol.structName) {
                         free(s[i].fields[j].symbol.structName);

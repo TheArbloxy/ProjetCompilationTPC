@@ -25,13 +25,6 @@ typedef enum {
 
 typedef struct {
     TypeValue typ;
-
-    union {
-        int value_int;
-        char value_char;
-        char* value_str;
-    } Value;
-
     char* structName;
     int isGlobal;
 } SymbolStruct;

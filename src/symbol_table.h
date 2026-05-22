@@ -17,8 +17,6 @@ typedef struct {
     TypeValue typ;
 
     union {
-        int value_int;
-        char value_char;
         char* value_str;
         FunctionInfo value_funct;
     } Value;
@@ -64,8 +62,6 @@ int insert(HashTable *h, const char* key, Symbol symbol);
 Symbol* lookup(HashTable *h, const char* key);
 Symbol* lookupFunction(HashTable *h, const char* key);
 Symbol* search(HashTable *h, const char* key);
-
-int lookupModify(HashTable *h, const char* key, Symbol newSymbol);
 
 int deleteH(HashTable *h, const char* key);
 void freeHashTable(HashTable *h);

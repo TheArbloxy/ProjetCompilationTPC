@@ -120,37 +120,6 @@ Symbol* lookupFunction(HashTable *h, const char* key) {
     return NULL;
 }
 
-static int modify(HashTable *h, const char* key, Symbol newSymbol) {
-    unsigned int index = hash(key);
-    HashEntry entry;
-
-    // Sondage linéaire
-    for (int i = 0; i < TABLE_SIZE; i++) {
-        unsigned int pos = (index + i) % TABLE_SIZE;
-        entry = h->table[pos];
-
-        // SI trouvé
-        if (entry.state == OCCUPIED 
-            && entry.key != NULL
-            && strcmp(entry.key, key) == 0
-            && !(entry.symbol.typ == SYM_FUNCTION || entry.symbol.typ == SYM_BUILTIN)) {
-            h->table[pos].symbol = newSymbol;
-            return 1;
-        }
-    }
-    // Pas trouvé
-    return 0;
-}
-
-int lookupModify(HashTable *h, const char* key, Symbol newSymbol) {
-    for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
-        if (modify(tmp, key, newSymbol)) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
 int deleteH(HashTable *h, const char* key) {
     unsigned int index = hash(key);
 
@@ -189,15 +158,6 @@ void printVariablesAndFunctions(HashTable *h) {
                 printf("| ADDRESS = %-3d ", s.address);
 
                 switch(s.typ) {
-                    case SYM_INT:
-                        printf("| VALUE = %-3d ", s.Value.value_int);
-                        break;
-                    case SYM_CHAR:
-                        printf("| VALUE = %-3c ", s.Value.value_char);
-                        break;
-                    case SYM_STRING:
-                        printf("| VALUE = %-3s ", s.Value.value_str);
-                        break;
                     case SYM_FUNCTION:
                     case SYM_BUILTIN:
                         printf("| RETURN TYPE = %-5s ", StringFromLabel[s.Value.value_funct.returnType]);

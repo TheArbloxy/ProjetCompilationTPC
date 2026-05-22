@@ -6,7 +6,7 @@ struct point {
 struct point p, p2;
 
 int main(void) {
-    p.a = 10;
+    p.a = 4 + 3 * 2;
     putint(p.a);
     return 0;
 }
