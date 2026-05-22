@@ -2,6 +2,7 @@ section .bss
     __charinput resb 1
     __buffer resb 1
     __input resb 1
+    x: resd 1
 
 global _start
 
@@ -16,6 +17,9 @@ _main:
     push rbp
     mov rbp, rsp
     sub rsp, 16
+    push 10
+    pop rdi
+    call my_putint
     push 0
     pop rax
     mov rsp, rbp

@@ -4,6 +4,7 @@ struct point {
 };
 
 struct point p, p2;
+int x;
 
 int main(void) {
     p.a = 10;

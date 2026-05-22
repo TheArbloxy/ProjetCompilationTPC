@@ -59,20 +59,6 @@ extern int castCheck(TypeValue LValue, TypeValue RValue) {
     return !(LValue == SYM_CHAR && RValue == SYM_INT);
 } 
 
-extern Symbol castSymbol(Symbol LValue, Symbol RValue) {
-    /*
-    Handles a symbol cast.
-    */
-    Symbol result = {0};
-    result.typ = LValue.typ;
-
-    // Gets the address and the global variable flag from the src to the result.
-    result.address = LValue.address;
-    result.isGlobal = LValue.isGlobal;
-
-    return result;
-}
-
 extern int sizeofType(TypeValue t) {
     switch (t) {
         case SYM_INT:

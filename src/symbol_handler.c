@@ -276,16 +276,64 @@ static Symbol handleEval(Node *n, HashTable *table) {
             return handleEval(n->firstChild, table);
         // Accès à un champ
         case fieldAccess: {
-            Node *idNode = n->firstChild;
-            Symbol *s = lookup(table, idNode->value.val_str);
-            if (!s) {
-                printf("Erreur ligne %d : variable %s non déclarée\n",
-                       idNode->lineno ,idNode->value.val_str);
-                semanticErrorCount++;
+            if (numberArgs(n) > 1) { // Champ d'une structure (ex : p.a = 10;)
+                Node *baseVar = n->firstChild;
+
+                SymbolS *baseStruct = lookupStructureVariable(table, baseVar->value.val_str);
+                if (!baseStruct) {
+                    printf("Erreur ligne %d : structure %s non déclarée\n",
+                        n->lineno, baseVar->value.val_str);
+                    semanticErrorCount++;
+                    return makeIntSymbol(0);
+                }
+
+                StructDef *currentStruct = lookupField(table, baseStruct->structName);
+                if (!currentStruct) {
+                    printf("Erreur interne : structure %s introuvable\n",
+                        baseStruct->structName);
+                    return makeIntSymbol(0);
+                }
+                
+                // Champs suivants (ex : p.a; ou p.color.r;)
+                Node *field = baseVar->nextSibling;
+                StructEntry *fieldSymbol = NULL;
+
+                while (field) {
+                    fieldSymbol = lookupEntry(currentStruct, field->value.val_str);
+                    if (!fieldSymbol) {
+                        printf("Erreur ligne %d : champ %s inexistant\n",
+                            n->lineno, field->value.val_str);
+                        semanticErrorCount++;
+                        return makeIntSymbol(0);
+                    }
+
+                    // Si champ intermédiaire (ex : p.color.r) : doit être une structure
+                    if (field->nextSibling) {
+                        if (!lookupStruct(table, fieldSymbol->symbol.name)) {
+                            printf("Erreur ligne %d : structure imbriquée %s introuvable\n",
+                                n->lineno, field->value.val_str);
+                            semanticErrorCount++;
+                            return makeIntSymbol(0);
+                        }
+                    }
+
+                    field = field->nextSibling;
+                }
 
                 return makeIntSymbol(0);
+                
+            } else { // Variables & fonctions
+                Node *idNode = n->firstChild;
+                Symbol *s = lookup(table, idNode->value.val_str);
+                if (!s) {
+                    printf("Erreur ligne %d : variable %s non déclarée\n",
+                        idNode->lineno ,idNode->value.val_str);
+                    semanticErrorCount++;
+
+                    return makeIntSymbol(0);
+                }
+                return *s;
             }
-            return *s;
         }
         // Appel fonction
         case appelFonct: {
@@ -363,6 +411,14 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
     Node *lhs = instr->firstChild;
     Node *rhs = lhs->nextSibling;
 
+    Node *lastField = NULL; // Variable name
+
+    // Récupérer la valeur de l'expression (rhs)
+    Symbol value = handleEval(rhs, n->symTable);
+    TypeValue typeValue; // Variable value
+    
+
+    // Récupérer variable (lhs)
     if (numberArgs(lhs) > 1) { // Champ d'une structure (ex : p.a = 10;)
         Node *baseVar = lhs->firstChild;
         SymbolS *baseStruct = lookupStructureVariable(table, baseVar->value.val_str);
@@ -403,14 +459,15 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
                 }
             }
 
+            lastField = field;
             field = field->nextSibling;
         }
 
+        typeValue = fieldSymbol->symbol.typ;
 
     } else { // Variable (int ou char)
-        // Récupérer la valeur de l'expression
-        Symbol value = handleEval(rhs, n->symTable);
         Node *variableName = lhs->firstChild;
+        lastField = variableName;
 
         // Récupérer variable destination
         Symbol *varDest = lookup(n->symTable, variableName->value.val_str);
@@ -421,20 +478,21 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
             return;
         }
 
-        // Vérification type
-        if (!castCheck(varDest->typ, value.typ)) {
-            printf("Avertissement ligne %d : conversion interdite de variable %s (int -> char)\n",
-                instr->lineno, variableName->value.val_str);
-            return;
-        }
-        if ((value.typ == SYM_FUNCTION || value.typ == SYM_BUILTIN) && value.value_funct.returnType == SYM_NONE) {
-            printf("Erreur ligne %d : variable %s assigné à un type incompatible 'void'\n",
-                instr->lineno, variableName->value.val_str);
-            semanticErrorCount++;
-            return;
-        }
+        typeValue = varDest->typ;
+    }
 
-        castSymbol(*varDest, value);
+    // Vérification type
+    if (!castCheck(typeValue, value.typ)) {
+        printf("Avertissement ligne %d : conversion interdite de variable %s (int -> char)\n",
+            instr->lineno, lastField->value.val_str);
+        return;
+    }
+    
+    if ((value.typ == SYM_FUNCTION || value.typ == SYM_BUILTIN) && value.value_funct.returnType == SYM_NONE) {
+        printf("Erreur ligne %d : variable %s assigné à un type incompatible 'void'\n",
+            instr->lineno, lastField->value.val_str);
+        semanticErrorCount++;
+        return;
     }
 }
 
