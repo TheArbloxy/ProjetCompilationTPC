@@ -243,17 +243,30 @@ static Symbol handleEval(Node *n, HashTable *table) {
         case id: {
             return makeIntSymbol(n->value.val_int);
         }
+        // Opérations binaires
+        case Exp:
+        case TB:
+        case FB:
+        case M:
+        case E:
+        case T: {
+            Node *left = n->firstChild;
+            Node *op = left->nextSibling;
+            Node *right = op->nextSibling;
+
+            handleEval(left, table);
+            handleEval(right, table);
+
+            Symbol result = {0};
+            result.typ = SYM_INT;
+            
+            return result;
+        }
         // Opérations unaires
-        case unaryminus: {
-            Symbol s = handleEval(n->firstChild, table);
-            return s;
-        }
+        case unaryminus:
         case unaryplus:
+        case notInstr:
             return handleEval(n->firstChild, table);
-        case notInstr: {
-            Symbol s = handleEval(n->firstChild, table);
-            return s;
-        }
         // Accès à un champ
         case fieldAccess: {
             Node *idNode = n->firstChild;
@@ -283,18 +296,18 @@ static Symbol handleEval(Node *n, HashTable *table) {
             }
 
             // Check arguments
-            if (s->Value.value_funct.numberParams > numberArgs(arguments)) {
+            if (s->value_funct.numberParams > numberArgs(arguments)) {
                 printf("Erreur ligne %d : pas assez d'arguments à la fonction %s, %d expecté, %d reçu\n",
                        functionName->lineno ,functionName->value.val_str,
-                        s->Value.value_funct.numberParams, numberArgs(arguments));
+                        s->value_funct.numberParams, numberArgs(arguments));
                 semanticErrorCount++;
 
                 return makeIntSymbol(0);
 
-            } else if (s->Value.value_funct.numberParams < numberArgs(arguments)) {
+            } else if (s->value_funct.numberParams < numberArgs(arguments)) {
                 printf("Erreur ligne %d : trop d'arguments à la fonction %s, %d expecté, %d reçu\n",
                        functionName->lineno, functionName->value.val_str,
-                        s->Value.value_funct.numberParams, numberArgs(arguments));
+                        s->value_funct.numberParams, numberArgs(arguments));
                 semanticErrorCount++;
 
                 return makeIntSymbol(0);
@@ -304,7 +317,7 @@ static Symbol handleEval(Node *n, HashTable *table) {
             int i = 0;
             for (Node *arg = arguments->firstChild; arg; arg = arg->nextSibling, i++) {
                 Symbol a = handleEval(arguments->firstChild, table);
-                if (!castCheck(s->Value.value_funct.paramTypes[i], a.typ)) {
+                if (!castCheck(s->value_funct.paramTypes[i], a.typ)) {
                     printf("Erreur ligne %d : conversion interdite d'argument de la fonction %s\n",
                         functionName->lineno, functionName->value.val_str);
                     semanticErrorCount++;
@@ -328,7 +341,7 @@ static void handleReturnType(Node *n, Node *functionName, Symbol function, HashT
     Handles a return case from the AST, to the symbol tree.
     */
     Symbol ident = handleEval(n->firstChild, table);
-    TypeValue returnType = function.Value.value_funct.returnType;
+    TypeValue returnType = function.value_funct.returnType;
 
     if (!castCheck(returnType, ident.typ)) {
         printf("Avertissement ligne %d : conversion interdite de valeur de retour de la fonction %s\n",
@@ -362,7 +375,7 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
             instr->lineno, variableName->value.val_str);
         return;
     }
-    if ((value.typ == SYM_FUNCTION || value.typ == SYM_BUILTIN) && value.Value.value_funct.returnType == SYM_NONE) {
+    if ((value.typ == SYM_FUNCTION || value.typ == SYM_BUILTIN) && value.value_funct.returnType == SYM_NONE) {
         printf("Erreur ligne %d : variable %s assigné à un type incompatible 'void'\n",
             instr->lineno, variableName->value.val_str);
         semanticErrorCount++;
@@ -409,13 +422,13 @@ static void handleFunction(Node *n, HashTable *table) {
     f.typ = SYM_FUNCTION;
     switch (functType->label) {
         case typeInt:
-            f.Value.value_funct.returnType = SYM_INT;
+            f.value_funct.returnType = SYM_INT;
             break;
         case typeChar:
-            f.Value.value_funct.returnType = SYM_CHAR;
+            f.value_funct.returnType = SYM_CHAR;
             break;
         default:
-            f.Value.value_funct.returnType = SYM_NONE;
+            f.value_funct.returnType = SYM_NONE;
             break;
     }
 
@@ -425,7 +438,7 @@ static void handleFunction(Node *n, HashTable *table) {
     // Function parameters
     Node *params = functName->nextSibling;
     if (params) {
-        handleParams(params, n->symTable, &f.Value.value_funct);
+        handleParams(params, n->symTable, &f.value_funct);
     }
 
     insert(table, functName->value.val_str, f);
@@ -455,7 +468,7 @@ static void handleFunction(Node *n, HashTable *table) {
                 }
                 case voidSt: {
                     // Check si c'est une fonction void
-                    if (f.Value.value_funct.returnType != SYM_NONE) {
+                    if (f.value_funct.returnType != SYM_NONE) {
                         printf("Erreur ligne %d : La fonction non-void %s devrait renvoyer une valeur\n",
                             instr->lineno, functName->value.val_str);
                         semanticErrorCount++;
@@ -464,7 +477,7 @@ static void handleFunction(Node *n, HashTable *table) {
                 }
                 case returnSt: {
                      // Check si c'est une fonction void
-                    if (f.Value.value_funct.returnType == SYM_NONE) {
+                    if (f.value_funct.returnType == SYM_NONE) {
                         printf("Erreur ligne %d : La fonction void %s ne devrait pas renvoyer une valeur\n",
                             instr->lineno, functName->value.val_str);
                         semanticErrorCount++;
@@ -481,7 +494,7 @@ static void handleFunction(Node *n, HashTable *table) {
         }
     }
 
-    if (f.Value.value_funct.returnType != SYM_NONE) {
+    if (f.value_funct.returnType != SYM_NONE) {
         if (!hasReturn) {
             printf("Avertissement ligne %d : La fonction non-void %s ne renvoie pas de valeur\n",
                 n->lineno, functName->value.val_str);
@@ -499,7 +512,7 @@ static void checkMain(HashTable *table) {
         semanticErrorCount++;
         return;
     }
-    if (main && main->Value.value_funct.returnType != SYM_INT) {
+    if (main && main->value_funct.returnType != SYM_INT) {
         printf("Erreur : la fonction main doit renvoyer un int\n");
         semanticErrorCount++;
     }

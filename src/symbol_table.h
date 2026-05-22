@@ -15,11 +15,7 @@ typedef struct {
 
 typedef struct {
     TypeValue typ;
-
-    union {
-        char* value_str;
-        FunctionInfo value_funct;
-    } Value;
+    FunctionInfo value_funct;
 
     int address;
     int isGlobal;

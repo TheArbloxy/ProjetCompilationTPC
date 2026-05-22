@@ -129,9 +129,6 @@ int deleteH(HashTable *h, const char* key) {
         // SI trouvé
         if (h->table[pos].state == OCCUPIED && strcmp(h->table[pos].key, key) == 0) {
             free(h->table[pos].key);
-            if (h->table[pos].symbol.typ == SYM_STRING) {
-                free(h->table[pos].symbol.Value.value_str);
-            }
             h->table[pos].state = DELETED;
             return 1;
         }
@@ -160,11 +157,11 @@ void printVariablesAndFunctions(HashTable *h) {
                 switch(s.typ) {
                     case SYM_FUNCTION:
                     case SYM_BUILTIN:
-                        printf("| RETURN TYPE = %-5s ", StringFromLabel[s.Value.value_funct.returnType]);
-                        printf("| NUMBER PARAMS = %-5d", s.Value.value_funct.numberParams);
+                        printf("| RETURN TYPE = %-5s ", StringFromLabel[s.value_funct.returnType]);
+                        printf("| NUMBER PARAMS = %-5d", s.value_funct.numberParams);
 
-                        for (int i = 0; i < s.Value.value_funct.numberParams; i++) {
-                            printf("%-5s", StringFromLabel[s.Value.value_funct.paramTypes[i]]);
+                        for (int i = 0; i < s.value_funct.numberParams; i++) {
+                            printf("%-5s", StringFromLabel[s.value_funct.paramTypes[i]]);
                         }
                         break;
                     default:
@@ -218,12 +215,6 @@ void freeHashTable(HashTable *h) {
         if (h->table[i].state == OCCUPIED) {
             free(h->table[i].key);
             h->table[i].key = NULL;
-
-            if (h->table[i].symbol.typ == SYM_STRING && h->table[i].symbol.Value.value_str != NULL) {
-                free(h->table[i].symbol.Value.value_str);
-                h->table[i].symbol.Value.value_str = NULL;
-            }
-
             h->table[i].state = DELETED;
         }
     }
@@ -249,28 +240,28 @@ void freeHashTable(HashTable *h) {
 extern void addBuiltIns(HashTable *global) {
     Symbol s = {0};
     s.typ = SYM_BUILTIN;
-    s.Value.value_funct.numberParams = 1;
-    s.Value.value_funct.returnType = SYM_NONE;
+    s.value_funct.numberParams = 1;
+    s.value_funct.returnType = SYM_NONE;
     s.address = -1;
     s.isGlobal = 1;
 
     // Putchar
-    s.Value.value_funct.paramTypes[0] = SYM_CHAR;
+    s.value_funct.paramTypes[0] = SYM_CHAR;
     insert(global, "putchar", s);
 
     // Putint
-    s.Value.value_funct.paramTypes[0] = SYM_INT;
+    s.value_funct.paramTypes[0] = SYM_INT;
     insert(global, "putint", s);
 
-    s.Value.value_funct.paramTypes[0] = SYM_NONE;
+    s.value_funct.paramTypes[0] = SYM_NONE;
 
     // Getchar
-    s.Value.value_funct.numberParams = 0;
-    s.Value.value_funct.returnType = SYM_CHAR;
+    s.value_funct.numberParams = 0;
+    s.value_funct.returnType = SYM_CHAR;
     insert(global, "getchar", s);
 
     // Getint
-    s.Value.value_funct.returnType = SYM_INT;
+    s.value_funct.returnType = SYM_INT;
     insert(global, "getint", s);
 }
 
