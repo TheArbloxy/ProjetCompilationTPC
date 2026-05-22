@@ -175,42 +175,42 @@ Corps: '{' DeclVars SuiteInstr '}' { Node *n = makeNode(corps);
 CorpsStruct: '{' DeclStruct '}' { $$ = $2; }
     ;
 DeclStruct:
-    DeclStruct TYPE Declarateurs ';' { Node *n = makeNode(declChamps);
-                                       if (strcmp($2, "int") == 0) addChild(n, makeNode(typeInt));
-                                       else if (strcmp($2, "char") == 0) addChild(n, makeNode(typeChar));
-                                       addChild(n, $3);
+        DeclStruct TYPE Declarateurs ';' {  Node *n = makeNode(declChamps);
+                                            if (strcmp($2, "int") == 0) addChild(n, makeNode(typeInt));
+                                            else if (strcmp($2, "char") == 0) addChild(n, makeNode(typeChar));
+                                            addChild(n, $3);
 
-                                       addChild($1, n);
-                                       $$ = $1;
-                                       }
-|  DeclStruct STRUCT IDENT Declarateurs ';' { Node *n = makeNode(declChamps);
-                                              addChild(n, makeNode(typeStruct));
-                                              addChild(n, makeNodeString(id, $3));
-                                              addChild(n, $4);
+                                            addChild($1, n);
+                                            $$ = $1;
+                                        }
+    |   DeclStruct STRUCT IDENT Declarateurs ';' {  Node *n = makeNode(declChamps);
+                                                    addChild(n, makeNode(typeStruct));
+                                                    addChild(n, makeNodeString(id, $3));
+                                                    addChild(n, $4);
 
-                                              addChild($1, n);
+                                                    addChild($1, n);
+                                                    $$ = $1;
+                                                }
+    |   TYPE Declarateurs ';' { Node *n = makeNode(declStruct);
+                                Node *param = makeNode(declChamps);
+                                    
+                                if (strcmp($1, "int") == 0) addChild(param, makeNode(typeInt));
+                                else if (strcmp($1, "char") == 0) addChild(param, makeNode(typeChar));
+                                addChild(param, $2);
 
-                                              $$ = $1;
-                                            }
- | TYPE Declarateurs ';' { Node *n = makeNode(declStruct);
-                           Node *param = makeNode(declChamps);
+                                addChild(n, param);
+                                $$ = n;
+                              }
+    |   STRUCT IDENT Declarateurs ';' { Node *n = makeNode(declStruct);
+                                        Node *param = makeNode(declChamps);
+                                            
+                                        addChild(param, makeNode(typeStruct));
+                                        addChild(param, makeNodeString(id, $2));
+                                        addChild(param, $3);
 
-                           if (strcmp($1, "int") == 0) addChild(param, makeNode(typeInt));
-                           else if (strcmp($1, "char") == 0) addChild(param, makeNode(typeChar));
-                           addChild(param, $2);
-
-                           addChild(n, param);
-                           $$ = n;
-                           }
- | STRUCT IDENT Declarateurs ';' { Node *n = makeNode(declStruct);
-                                   Node *param = makeNode(declChamps);
-                                   addChild(n, makeNode(typeStruct));
-                                   addChild(n, makeNodeString(id, $2));
-                                   addChild(n, $3);
-
-                                   addChild(n, param);
-                                   $$ = n;
-                                   }
+                                        addChild(n, param);
+                                        $$ = n;
+                                    }
 ;
 SuiteInstr:
        SuiteInstr Instr { addChild($1, $2);

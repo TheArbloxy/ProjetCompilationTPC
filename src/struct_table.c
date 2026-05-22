@@ -4,7 +4,7 @@
 #include "struct_table.h"
 
 static const char *StringFromLabel[] = {
-  "Void", "Int", "Char", "String", "Built-in", "Function"
+  "Void", "Int", "Char", "String", "Built-in", "Function", "Structure"
 };
 
 static unsigned int hash(const char* str) {

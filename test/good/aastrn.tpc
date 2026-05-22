@@ -3,8 +3,8 @@ struct B {
 };
 
 struct A {
-    int a;
     struct B a;
+    struct B a2;
 };
 
 struct A p, p2;

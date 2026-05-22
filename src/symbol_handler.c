@@ -25,10 +25,14 @@ static void handleDeclStruct(Node *n, HashTable *table) {
 
             // Parcourir les déclarations de structure
             for (Node* fieldDecl = declStr->firstChild; fieldDecl; fieldDecl = fieldDecl->nextSibling) {
-                printf("LABEL N : %s\n", fieldDecl ? strToLabel(fieldDecl->label) : "null");
                 Node *fieldType = fieldDecl->firstChild;
-                Node *fieldIds = fieldType->nextSibling;
-                printf("test\n");
+
+                Node *fieldIds = NULL;
+                if (fieldType->label == typeStruct) {
+                    fieldIds = fieldType->nextSibling->nextSibling;
+                } else {
+                    fieldIds = fieldType->nextSibling;
+                }
 
                 // Parcourir les champs de la structure
                 for (Node* field = fieldIds->firstChild; field; field = field->nextSibling) {
