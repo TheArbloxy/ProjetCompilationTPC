@@ -1,9 +1,9 @@
 ; runtime.asm
 
 section .bss
-charinput resb 1
-buffer resb 1
-input resb 1
+    __charinput resb 1
+    __buffer resb 1
+    __input resb 1
 
 section .text
 global my_getchar
@@ -12,25 +12,25 @@ global my_getint
 global my_putint
 
 my_getchar:
-    ; read (stdin, charinput, 1)
+    ; read (stdin, __charinput, 1)
     mov rax, 0
     mov rdi, 0
-    mov rsi, charinput
+    mov rsi, __charinput
     mov rdx, 1
     syscall
 
     ; renvoyer le caractère lu
-    movzx rax, byte [charinput]
+    movzx rax, byte [__charinput]
     ret
 
 my_putchar:
     ; stocke le caractère
-    mov [buffer], dil
+    mov [__buffer], dil
 
-    ; write (stdout, buffer, 1)
+    ; write (stdout, __buffer, 1)
     mov rax, 1
     mov rdi, 1
-    mov rsi, buffer
+    mov rsi, __buffer
     mov rdx, 1
     syscall 
 
@@ -41,14 +41,14 @@ my_getint:
     xor rbx, rdx ; résultat = 0
 
 .read_first:
-    ; read (stdin, input, 1)
+    ; read (stdin, __input, 1)
     mov rax, 0
     mov rdi, 0
-    mov rsi, input
+    mov rsi, __input
     mov rdx, 1
     syscall
 
-    mov al, [input]
+    mov al, [__input]
 
     ; vérifier chiffre
     cmp al, '0'
@@ -70,11 +70,11 @@ my_getint:
     ; lire caractère suivant
     mov rax, 0
     mov rdi, 0
-    mov rsi, input
+    mov rsi, __input
     mov rdx, 1
     syscall
 
-    mov al, [input]
+    mov al, [__input]
 
     ; continuer si chiffre
     cmp al, '0'

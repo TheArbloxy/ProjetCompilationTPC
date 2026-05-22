@@ -46,10 +46,7 @@ ASMFLAGS = -f elf64
 ASMCFLAGS = -nostartfiles -no-pie
 
 # NASM + édition de liens
-ASM_RUNTIME = $(SRC)/runtime.asm
 ASM_PROGRAM = _anonymous.asm
-
-ASM_RUNTIME_OBJ = $(OBJ)/runtime.o
 ASM_PROGRAM_OBJ = $(OBJ)/_anonymous.o
 
 ASM_EXEC = bin/prog
@@ -99,11 +96,8 @@ $(LEX_C): $(LEX) $(YACC_H)
 # Fichiers .asm
 run: $(ASM_EXEC)
 
-$(ASM_EXEC): $(ASM_RUNTIME_OBJ) $(ASM_PROGRAM_OBJ)
-	gcc $(ASMCFLAGS) $(ASM_RUNTIME_OBJ) $(ASM_PROGRAM_OBJ) -o $(ASM_EXEC)
-
-$(ASM_RUNTIME_OBJ): $(ASM_RUNTIME)
-	nasm $(ASMFLAGS) $(ASM_RUNTIME) -o $(ASM_RUNTIME_OBJ)
+$(ASM_EXEC): $(ASM_PROGRAM_OBJ)
+	gcc $(ASMCFLAGS) $(ASM_PROGRAM_OBJ) -o $(ASM_EXEC)
 
 $(ASM_PROGRAM_OBJ): $(ASM_PROGRAM)
 	nasm $(ASMFLAGS) $(ASM_PROGRAM) -o $(ASM_PROGRAM_OBJ)

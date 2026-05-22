@@ -111,6 +111,9 @@ static void printStructTable(StructDef *s) {
                     case SYM_STRING:
                         printf("| VALUE = %-3s ", st.Value.value_str);
                         break;
+                    case SYM_STRUCT:
+                        printf("| STRUCT = %-10s ", st.Value.value_str);
+                        break;
                     default:
                         break;
                 }

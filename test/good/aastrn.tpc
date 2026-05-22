@@ -1,0 +1,19 @@
+struct couleur {
+    int R;
+    int G;
+    int B;
+};
+
+struct point {
+    int a;
+    int b;
+    char code;
+    struct couleur c;
+};
+
+struct point p, p2;
+
+int main(void) {
+    p.a = 10;
+    return 0;
+}

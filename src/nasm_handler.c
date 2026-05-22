@@ -505,6 +505,7 @@ void genGlobalVariables(HashTable* h, FILE *f) {
     if (!h) return;
 
     fprintf(f, "section .bss\n");
+    write_runtime_bss(f);
 
     for (int i = 0; i < TABLE_SIZE; i++) {
         HashEntry *entry = &h->table[i];
@@ -589,11 +590,7 @@ void parcoursArbre(Node *n, FILE *f) {
         case prog:
             genGlobalVariables(n->symTable, f);
             
-            fprintf(f, "global _start\n\nsection .text\n");
-            fprintf(f, "extern my_getchar\n"
-                        "extern my_putchar\n"
-                        "extern my_getint\n"
-                        "extern my_putint\n");
+            fprintf(f, "global _start\n\nsection .text\n");;
             fprintf(f, "\n_start:\n");
             fprintf(f, "    call _main\n");
 
@@ -617,4 +614,9 @@ void parcoursArbre(Node *n, FILE *f) {
         default:
             break;
     }
+
+    write_my_getchar(f);
+    write_my_putchar(f);
+    write_my_getint(f);
+    write_my_putint(f);
 }

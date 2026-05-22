@@ -48,7 +48,20 @@ static void handleDeclStruct(Node *n, HashTable *table) {
                             entry.symbol.typ = SYM_CHAR;
                             entry.size = 1;
                             break;
-                        // TODO : ajouter les structures imbriquées
+                        case typeStruct: { // TODO : fix
+                            entry.symbol.typ = SYM_STRUCT;
+                            StructDef *nested = lookupStruct(table, fieldType->nextSibling->value.val_str);
+                            if (!nested) {
+                                printf("Erreur ligne %d : structure %s non déclarée\n",
+                                    ident->lineno, ident->value.val_str);
+                                    semanticErrorCount++;
+                                continue; 
+                            }
+
+                            entry.symbol.structName = strdup(nested->structName);
+                            entry.size = nested->totalSize;
+                            break;
+                        }
                         default:
                             break;
                     }

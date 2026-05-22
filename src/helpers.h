@@ -22,4 +22,12 @@ int numberArgs(Node *node);
 int getLocalStackTable(HashTable *h);
 int align16(int n);
 
+// RUNTIME FUNCTIONS HANDLER //
+
+void write_runtime_bss(FILE *f);
+void write_my_getchar(FILE *f);
+void write_my_putchar(FILE *f);
+void write_my_getint(FILE *f);
+void write_my_putint(FILE *f);
+
 #endif
