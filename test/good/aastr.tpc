@@ -1,15 +1,11 @@
-int a;
-
 struct point {
-    char code;
-    int x, y;
+    int a;
+    int b;
 };
 
-int main(void) {
-    struct point p;
+struct point p;
 
-    p.name = 'a';
-    p.x = 4;
-    p.y = 2;
+int main(void) {
+    p.a = 10;
     return 0;
 }

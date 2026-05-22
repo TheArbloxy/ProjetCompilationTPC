@@ -5,6 +5,17 @@
 static int globalAddress = 0;
 static int semanticErrorCount = 0;
 
+static void handleDeclStruct(Node *n, HashTable *table) {
+    /*
+    Handles structure declarations from the AST, to the symbol table.
+    */
+    Node *ident = n->firstChild->nextSibling;
+    Node *declStr = ident->nextSibling;
+
+    printf("DECL STR : %s\n", declStr ? strToLabel(declStr->label) : "NULL");
+
+}
+
 static void handleDeclVars(Node *declVars, HashTable *table) {
     /*
     Handles variable declarations from the AST, to the symbol table.
@@ -57,100 +68,11 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
                 break;
             // Déclaration structure
             } case declVarStruct: {
-                Node *structNameNode = decl->firstChild->nextSibling;
-                char *structName = structNameNode->value.val_str;
-                Node *content = structNameNode->nextSibling;
-
-                switch (content->label) {
-                    // Déclaration type structure
-                    case declStruct: {
-                        StructDef def = {0};
-
-                        def.structName = strdup(structName);
-                        int currentOffset = 0;
-
-                        // Parcours des champs
-                        for (Node *fieldDecl = content->firstChild; fieldDecl; fieldDecl = fieldDecl->nextSibling) {
-                            Node *fieldType = fieldDecl->firstChild;
-                            Node *fieldIds  = fieldType->nextSibling;
-
-                            for (Node *fieldId = fieldIds->firstChild; fieldId; fieldId = fieldId->nextSibling) {
-                                StructEntry entry = {0};
-
-                                entry.key = strdup(fieldId->value.val_str);
-
-                                switch(fieldType->label) {
-                                    case typeInt:
-                                        entry.symbol.typ = SYM_INT;
-                                        entry.size = 4;
-                                        break;
-                                    case typeChar:
-                                        entry.symbol.typ = SYM_CHAR;
-                                        entry.size = 1;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                                entry.offset = currentOffset;
-                                currentOffset += entry.size;
-                                insertField(&def, entry);
-                            }
-                        }
-
-                        def.totalSize = currentOffset;
-
-                        if (!insertStruct(table->structs, def)) {
-                            printf("Erreur ligne %d : structure %s déjà déclarée\n",
-                            structNameNode->lineno, structName);
-                            semanticErrorCount++;
-                        }
-
-                        break;
-                    }
-                    // Déclaration variable structure
-                    case declarateurs: {
-                    
-                        // Récupérer structure
-                        StructDef *def = lookupStruct(table, structName);
-                        if (!def) {
-                            printf("Erreur ligne %d : structure %s inconnue\n",
-                                structNameNode->lineno, structName);
-                            semanticErrorCount++;
-                            break;
-                        }
-                        
-                        // Symbol
-                        for (Node *id = content->firstChild; id; id = id->nextSibling) {
-                            Symbol s = {0};
-                            s.typ = SYM_STRUCT;
-                            s.structName = strdup(structName);
-                            s.size = def->totalSize;
-
-                            if (isGlobalScope(table)) {
-                                s.address = globalAddress;
-                                s.isGlobal = 1;
-                            } else {
-                                s.address = table->relativeAddress;
-                                s.isGlobal = 0;
-                            }
-
-                            if (!insert(table, id->value.val_str, s)) {
-                                printf("Erreur ligne %d : variable %s déjà déclarée\n",
-                                    id->lineno, id->value.val_str);
-                                semanticErrorCount++;
-                            }
-                        }
-                        
-                        break;
-                    }
-                    default:
-                        break;
-                }
-                // insertStruct(table->structs, ident->);
-                // printf("LABEL DECL : %s (%s)\n", ident ? strToLabel(ident->label) : "null", ident->value.val_str); // TEST
+                handleDeclStruct(decl, table);
                 break;
             } default: 
                 break;
+                
         }
     }
 }

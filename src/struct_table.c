@@ -35,30 +35,6 @@ void initStructScope(StructDef* s, int startingAdress) {
     }
 }
 
-int insertStruct(StructDef *s, StructDef st) {
-    unsigned int index = hash(st.structName);
-
-    // Sondage linéaire
-    for (int i = 0; i < TABLE_SIZE; i++) {
-        unsigned int pos = (index + i) % TABLE_SIZE;
-        // Place libre
-        if (s[pos].state != OCCUPIED) {
-            s[pos] = st;
-            s[pos].state = OCCUPIED;
-
-            printf("INSERTED : %s\n", s[pos].structName);
-            return 1;
-        // Déjà dans la hash map
-        } else {
-            if (strcmp(s[pos].structName, st.structName) == 0) {
-                return 0;
-            }
-        }
-    }
-    // Table pleine
-    return 0;
-}
-
 int insertField(StructDef *def, StructEntry field) {
     unsigned int index = hash(field.key);
 
@@ -68,13 +44,14 @@ int insertField(StructDef *def, StructEntry field) {
         // Place libre
         if (def->fields[pos].state != OCCUPIED) {
             def->fields[pos] = field;
+            def->fields[pos].key = strdup(field.key);
             def->fields[pos].state = OCCUPIED;
 
             printf("INSERTED : %s\n", def->fields[pos].key);
             return 1;
         // Déjà dans la hash map
         } else {
-            if (strcmp(def->fields[pos].key, field.key) == 0) {
+            if (def->fields[pos].key && strcmp(def->fields[pos].key, field.key) == 0) {
                 return 0;
             }
         }

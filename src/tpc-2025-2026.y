@@ -406,8 +406,8 @@ int main(int argc, char **argv) {
         /* If a semantic error is detected */
         if (!buildSymbolTables(node, global)) {
             printf("Erreur sémantique détectée, arrêt de la compilation.\n");
-            deleteTree(node);
-            return 2;
+            // deleteTree(node);
+            // return 2;
         }
         if (symtabs) {
             printAllTables(node);

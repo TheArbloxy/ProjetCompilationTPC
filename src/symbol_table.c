@@ -291,3 +291,28 @@ StructDef* lookupStruct(HashTable *table, const char* name) {
     }
     return NULL;
 }
+
+int insertStruct(HashTable *table, StructDef st) {
+    unsigned int index = hash(st.structName);
+
+    // Sondage linéaire
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        unsigned int pos = (index + i) % TABLE_SIZE;
+        // Place libre
+        if (table->structs[pos].state != OCCUPIED) {
+            table->structs[pos] = st;
+            table->structs[pos].structName = strdup(st.structName);
+            table->structs[pos].state = OCCUPIED;
+
+            printf("INSERTED : %s\n", table->structs[pos].structName);
+            return 1;
+        // Déjà dans la hash map
+        } else {
+            if (table->structs[pos].structName && strcmp(table->structs[pos].structName, st.structName) == 0) {
+                return 0;
+            }
+        }
+    }
+    // Table pleine
+    return 0;
+}

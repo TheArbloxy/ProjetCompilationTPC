@@ -56,7 +56,6 @@ typedef struct {
 } StructDef; // Contains a struct, with all its fields
 
 void initStructScope(StructDef* s, int startingAdress);
-int insertStruct(StructDef *s, StructDef st);
 int insertField(StructDef *def, StructEntry field);
 StructEntry* lookupField(StructDef *def, const char* name);
 void printStructScope(StructDef *s);

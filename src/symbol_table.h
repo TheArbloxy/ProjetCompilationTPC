@@ -59,5 +59,6 @@ void printHashTable(HashTable *h);
 void addBuiltIns(HashTable *global);
 
 StructDef* lookupStruct(HashTable *table, const char* name);
+int insertStruct(HashTable *table, StructDef st);
 
 #endif
