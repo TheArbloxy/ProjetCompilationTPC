@@ -9,11 +9,64 @@ static void handleDeclStruct(Node *n, HashTable *table) {
     /*
     Handles structure declarations from the AST, to the symbol table.
     */
+    if (!n || !n->firstChild) return;
+
     Node *ident = n->firstChild->nextSibling;
+    if (!ident) return;
     Node *declStr = ident->nextSibling;
+    if (!declStr) return;
 
-    printf("DECL STR : %s\n", declStr ? strToLabel(declStr->label) : "NULL");
+    switch (declStr->label) {
+        case declStruct: {
+            StructDef def = {0};
+            def.structName = strdup(ident->value.val_str);
 
+            int currentOffset = 0;
+
+            // Parcourir les déclarations de structure
+            for (Node* fieldDecl = declStr->firstChild; fieldDecl; fieldDecl = fieldDecl->nextSibling) {
+                Node *fieldType = fieldDecl->firstChild;
+                Node *fieldIds = fieldType->nextSibling;
+
+                // Parcourir les champs de la structure
+                for (Node* field = fieldIds->firstChild; field; field = field->nextSibling) {
+                    StructEntry entry = {0};
+                    if (field->value.val_str) {
+                        entry.key = strdup(field->value.val_str);
+                    } else {
+                        entry.key = strdup("test");
+                    }
+                    entry.offset = currentOffset;
+
+                    // Type champ
+                    switch(fieldType->label) {
+                        case typeInt:
+                            entry.symbol.typ = SYM_INT;
+                            entry.size = 4;
+                            break;
+                        case typeChar:
+                            entry.symbol.typ = SYM_CHAR;
+                            entry.size = 1;
+                            break;
+                        // TODO : ajouter les structures imbriquées
+                        default:
+                            break;
+                    }
+                    currentOffset += entry.size;
+                    insertField(&def, entry);
+                }
+            } 
+
+            def.totalSize += currentOffset;
+            insertStruct(table, def);
+            break;
+        }
+        case declarateurs: {
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 static void handleDeclVars(Node *declVars, HashTable *table) {

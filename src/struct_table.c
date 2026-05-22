@@ -61,18 +61,22 @@ int insertField(StructDef *def, StructEntry field) {
 }
 
 StructEntry* lookupField(StructDef *def, const char* name) {
+    if (!def || !name) return NULL;
     unsigned int index = hash(name);
-    StructEntry entry;
 
     for (int i = 0; i < TABLE_SIZE; i++) {
         unsigned int pos = (index + i) % TABLE_SIZE;
-        entry = def->fields[pos];
+        StructEntry *entry = &def->fields[pos];
+
+        if (entry->state == EMPTY) {
+            break;
+        }
 
         // SI trouvé
-        if (entry.state == OCCUPIED 
-            && entry.key != NULL
-            && strcmp(entry.key, name) == 0){
-            return &def->fields[pos];
+        if (entry->state == OCCUPIED 
+            && entry->key != NULL
+            && strcmp(entry->key, name) == 0){
+            return entry;
         }
     }
     return NULL;

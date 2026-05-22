@@ -275,17 +275,21 @@ extern void addBuiltIns(HashTable *global) {
 StructDef* lookupStruct(HashTable *table, const char* name) {
     unsigned int index = hash(name);
     
-    for (HashTable *tmp = table; tmp; tmp = table->parent) {
-        StructDef entry;
+    for (HashTable *tmp = table; tmp; tmp = tmp->parent) {
 
         for (int i = 0; i < TABLE_SIZE; i++) {
             unsigned int pos = (index + i) % TABLE_SIZE;
-            entry = tmp->structs[pos];
+            StructDef *entry = &tmp->structs[pos];
             // SI trouvé
-            if (entry.state == OCCUPIED 
-                && entry.structName != NULL
-                && strcmp(entry.structName, name) == 0){
-                return &tmp->structs[pos];
+
+            if (entry->state == EMPTY) {
+                break;
+            }
+            
+            if (entry->state == OCCUPIED 
+                && entry->structName != NULL
+                && strcmp(entry->structName, name) == 0){
+                return entry;
             }
         }
     }
