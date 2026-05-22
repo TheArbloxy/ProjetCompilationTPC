@@ -33,9 +33,6 @@ typedef struct {
     } Value;
 
     char* structName;
-
-    int size;
-    int address;
     int isGlobal;
 } SymbolStruct;
 

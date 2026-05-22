@@ -17,6 +17,8 @@ _main:
     mov rbp, rsp
     sub rsp, 16
     push 10
+    pop rdi
+    call my_putint
     push 0
     pop rax
     mov rsp, rbp

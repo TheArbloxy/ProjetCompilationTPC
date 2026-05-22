@@ -99,7 +99,7 @@ static void printStructTable(StructDef *s) {
 
                 printf("KEY = %-20s | TYPE = %-8s ", e->key, StringFromLabel[st.typ]);
                 printf("| %-6s ", st.isGlobal ? "Global" : "Local");
-                printf("| ADDRESS = %-3d ", st.address);
+                printf("| ADDRESS = %-3d | SIZE = %-3d ", e->offset, e->size);
 
                 switch(st.typ) {
                     case SYM_INT:

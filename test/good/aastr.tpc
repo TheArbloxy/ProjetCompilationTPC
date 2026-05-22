@@ -7,5 +7,6 @@ struct point p, p2;
 
 int main(void) {
     p.a = 10;
+    putint(p.a);
     return 0;
 }

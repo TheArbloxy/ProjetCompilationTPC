@@ -66,6 +66,7 @@ static void handleDeclStruct(Node *n, HashTable *table) {
                             break;
                     }
                     currentOffset += entry.size;
+                    printf("OFFSET : %d\n", currentOffset);
                     insertField(&def, entry);
                 }
             } 
@@ -107,9 +108,9 @@ static void handleDeclStruct(Node *n, HashTable *table) {
                     semanticErrorCount++;
                 } else {
                     if (isGlobalScope(table)) {
-                        s.address += s.size;
+                        s.address += def->totalSize;
                     } else {
-                        table->relativeAddress += s.size;
+                        table->relativeAddress += def->totalSize;
                     }
                 }
             }
