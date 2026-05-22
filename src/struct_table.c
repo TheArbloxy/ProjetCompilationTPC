@@ -47,7 +47,7 @@ int insertField(StructDef *def, StructEntry field) {
             def->fields[pos].key = strdup(field.key);
             def->fields[pos].state = OCCUPIED;
 
-            printf("INSERTED : %s\n", def->fields[pos].key);
+            printf("INSERTED FIELD : %s\n", def->fields[pos].key);
             return 1;
         // Déjà dans la hash map
         } else {
@@ -60,25 +60,22 @@ int insertField(StructDef *def, StructEntry field) {
     return 0;
 }
 
-StructEntry* lookupField(StructDef *def, const char* name) {
-    if (!def || !name) return NULL;
+StructEntry* lookupEntry(StructDef *s, const char* name) {
     unsigned int index = hash(name);
 
+    // Sondage linéaire
     for (int i = 0; i < TABLE_SIZE; i++) {
         unsigned int pos = (index + i) % TABLE_SIZE;
-        StructEntry *entry = &def->fields[pos];
+        StructEntry *entry = &s->fields[pos];
 
-        if (entry->state == EMPTY) {
-            break;
-        }
-
-        // SI trouvé
+        // Si trouvé
         if (entry->state == OCCUPIED 
             && entry->key != NULL
             && strcmp(entry->key, name) == 0){
             return entry;
         }
     }
+
     return NULL;
 }
 
@@ -103,7 +100,7 @@ static void printStructTable(StructDef *s) {
 
                 switch(st.typ) {
                     case SYM_STRUCT:
-                        printf("| STRUCT = %-10s ", st.structName);
+                        printf("| STRUCT = %-10s ", st.name);
                         break;
                     default:
                         break;
@@ -141,15 +138,14 @@ void freeStructScope(StructDef *s) {
             }
 
             // Free tous les champs d'une structure
-            
             for (size_t j = 0; j < TABLE_SIZE; j++) {
                 if (s[i].fields[j].state == OCCUPIED) {
                     free(s[i].fields[j].key);
                     s[i].fields[j].key = NULL;
 
-                    if (s[i].fields[j].symbol.structName) {
-                        free(s[i].fields[j].symbol.structName);
-                        s[i].fields[j].symbol.structName = NULL;
+                    if (s[i].fields[j].symbol.name) {
+                        free(s[i].fields[j].symbol.name);
+                        s[i].fields[j].symbol.name = NULL;
                     }
                     
                 }

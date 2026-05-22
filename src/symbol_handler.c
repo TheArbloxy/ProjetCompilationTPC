@@ -25,8 +25,10 @@ static void handleDeclStruct(Node *n, HashTable *table) {
 
             // Parcourir les déclarations de structure
             for (Node* fieldDecl = declStr->firstChild; fieldDecl; fieldDecl = fieldDecl->nextSibling) {
+                printf("LABEL N : %s\n", fieldDecl ? strToLabel(fieldDecl->label) : "null");
                 Node *fieldType = fieldDecl->firstChild;
                 Node *fieldIds = fieldType->nextSibling;
+                printf("test\n");
 
                 // Parcourir les champs de la structure
                 for (Node* field = fieldIds->firstChild; field; field = field->nextSibling) {
@@ -39,6 +41,7 @@ static void handleDeclStruct(Node *n, HashTable *table) {
                     entry.offset = currentOffset;
 
                     // Type champ
+                    // printf("LABEL N : %s\n", fieldType ? strToLabel(fieldType->label) : "null");
                     switch(fieldType->label) {
                         case typeInt:
                             entry.symbol.typ = SYM_INT;
@@ -48,17 +51,17 @@ static void handleDeclStruct(Node *n, HashTable *table) {
                             entry.symbol.typ = SYM_CHAR;
                             entry.size = 1;
                             break;
-                        case typeStruct: { // TODO : fix
+                        case typeStruct: {
                             entry.symbol.typ = SYM_STRUCT;
                             StructDef *nested = lookupStruct(table, fieldType->nextSibling->value.val_str);
                             if (!nested) {
                                 printf("Erreur ligne %d : structure %s non déclarée\n",
                                     ident->lineno, ident->value.val_str);
                                     semanticErrorCount++;
-                                continue; 
+                                break; 
                             }
 
-                            entry.symbol.structName = strdup(nested->structName);
+                            entry.symbol.name = strdup(nested->structName);
                             entry.size = nested->totalSize;
                             break;
                         }
@@ -66,7 +69,7 @@ static void handleDeclStruct(Node *n, HashTable *table) {
                             break;
                     }
                     currentOffset += entry.size;
-                    printf("OFFSET : %d\n", currentOffset);
+                    // printf("OFFSET : %d\n", currentOffset);
                     insertField(&def, entry);
                 }
             } 
@@ -355,34 +358,80 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
     */
     Node *lhs = instr->firstChild;
     Node *rhs = lhs->nextSibling;
-    
-    // Récupérer la valeur de l'expression
-    Symbol value = handleEval(rhs, n->symTable);
-    Node *variableName = lhs->firstChild;
 
-    // Récupérer variable destination
-    Symbol *varDest = lookup(n->symTable, variableName->value.val_str);
-    if (!varDest) {
-        printf("Erreur ligne %d : variable %s non déclarée\n",
-            instr->lineno, variableName->value.val_str);
-        semanticErrorCount++;
-        return;
-    }
+    if (numberArgs(lhs) > 1) { // Champ d'une structure (ex : p.a = 10;)
+        Node *baseVar = lhs->firstChild;
+        SymbolS *baseStruct = lookupStructureVariable(table, baseVar->value.val_str);
+        if (!baseStruct) {
+            printf("Erreur ligne %d : structure %s non déclarée\n",
+                instr->lineno, baseVar->value.val_str);
+            semanticErrorCount++;
+            return;
+        }
 
-    // Vérification type
-    if (!castCheck(varDest->typ, value.typ)) {
-        printf("Avertissement ligne %d : conversion interdite de variable %s (int -> char)\n",
-            instr->lineno, variableName->value.val_str);
-        return;
-    }
-    if ((value.typ == SYM_FUNCTION || value.typ == SYM_BUILTIN) && value.value_funct.returnType == SYM_NONE) {
-        printf("Erreur ligne %d : variable %s assigné à un type incompatible 'void'\n",
-            instr->lineno, variableName->value.val_str);
-        semanticErrorCount++;
-        return;
-    }
+        StructDef *currentStruct = lookupField(n->symTable, baseStruct->structName);
+        if (!currentStruct) {
+            printf("Erreur interne : structure %s introuvable\n",
+                baseStruct->structName);
+            return;
+        }
+        
+        // Champs suivants (ex : p.a; ou p.color.r;)
+        Node *field = baseVar->nextSibling;
+        StructEntry *fieldSymbol = NULL;
 
-    castSymbol(*varDest, value);
+        while (field) {
+            fieldSymbol = lookupEntry(currentStruct, field->value.val_str);
+            if (!fieldSymbol) {
+                printf("Erreur ligne %d : champ %s inexistant\n",
+                    instr->lineno, field->value.val_str);
+                semanticErrorCount++;
+                return;
+            }
+
+            // Si champ intermédiaire (ex : p.color.r) : doit être une structure
+            if (field->nextSibling) {
+                if (!lookupStruct(table, fieldSymbol->symbol.name)) {
+                    printf("Erreur ligne %d : structure imbriquée %s introuvable\n",
+                        instr->lineno, field->value.val_str);
+                    semanticErrorCount++;
+                    return;
+                }
+            }
+
+            field = field->nextSibling;
+        }
+
+
+    } else { // Variable (int ou char)
+        // Récupérer la valeur de l'expression
+        Symbol value = handleEval(rhs, n->symTable);
+        Node *variableName = lhs->firstChild;
+
+        // Récupérer variable destination
+        Symbol *varDest = lookup(n->symTable, variableName->value.val_str);
+        if (!varDest) {
+            printf("Erreur ligne %d : variable %s non déclarée\n",
+                instr->lineno, variableName->value.val_str);
+            semanticErrorCount++;
+            return;
+        }
+
+        // Vérification type
+        if (!castCheck(varDest->typ, value.typ)) {
+            printf("Avertissement ligne %d : conversion interdite de variable %s (int -> char)\n",
+                instr->lineno, variableName->value.val_str);
+            return;
+        }
+        if ((value.typ == SYM_FUNCTION || value.typ == SYM_BUILTIN) && value.value_funct.returnType == SYM_NONE) {
+            printf("Erreur ligne %d : variable %s assigné à un type incompatible 'void'\n",
+                instr->lineno, variableName->value.val_str);
+            semanticErrorCount++;
+            return;
+        }
+
+        castSymbol(*varDest, value);
+    }
 }
 
 static void handleFunction(Node *n, HashTable *table) {

@@ -57,7 +57,8 @@ int insert(HashTable *h, const char* key, Symbol symbol);
 
 Symbol* lookup(HashTable *h, const char* key);
 Symbol* lookupFunction(HashTable *h, const char* key);
-Symbol* search(HashTable *h, const char* key);
+SymbolS* lookupStructureVariable(HashTable *h, const char* key);
+StructDef* lookupField(HashTable *h, const char* name);
 
 int deleteH(HashTable *h, const char* key);
 void freeHashTable(HashTable *h);

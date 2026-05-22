@@ -25,7 +25,7 @@ typedef enum {
 
 typedef struct {
     TypeValue typ;
-    char* structName;
+    char* name;
     int isGlobal;
 } SymbolStruct;
 
@@ -47,7 +47,7 @@ typedef struct {
 
 void initStructScope(StructDef* s, int startingAdress);
 int insertField(StructDef *def, StructEntry field);
-StructEntry* lookupField(StructDef *def, const char* name);
+StructEntry* lookupEntry(StructDef *s, const char* name);
 void printStructScope(StructDef *s);
 void freeStructScope(StructDef *s);
 

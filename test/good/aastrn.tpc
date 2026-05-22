@@ -1,19 +1,14 @@
-struct couleur {
-    int R;
-    int G;
-    int B;
-};
-
-struct point {
-    int a;
+struct B {
     int b;
-    char code;
-    struct couleur c;
 };
 
-struct point p, p2;
+struct A {
+    int a;
+    struct B a;
+};
+
+struct A p, p2;
 
 int main(void) {
-    p.a = 10;
     return 0;
 }

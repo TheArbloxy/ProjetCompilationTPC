@@ -22,14 +22,16 @@ static unsigned int hash(const char* str) {
 void initHashTable(HashTable* h, HashTable* global, const char* name, int startingAdress) {
     h->functionName = strdup(name);
     h->relativeAddress = startingAdress;
+
+    // Init table variables & fonctions / table variables structures
     for (int i = 0; i < TABLE_SIZE; i++) {
         h->table[i].key = NULL;
         h->table[i].state = EMPTY;
-    }
-    for (int i = 0; i < TABLE_SIZE; i++) {
+
         h->tableS[i].key = NULL;
         h->tableS[i].state = EMPTY;
     }
+
     h->parent = global;
     initStructScope(h->structs, startingAdress);
 }
@@ -59,7 +61,7 @@ int insert(HashTable *h, const char* key, Symbol symbol) {
     return 0;
 }
 
-Symbol* search(HashTable *h, const char* key) {
+static Symbol* search(HashTable *h, const char* key) {
     unsigned int index = hash(key);
     HashEntry entry;
 
@@ -98,6 +100,43 @@ static Symbol* searchFunction(HashTable *h, const char* key) {
     return NULL;
 }
 
+static SymbolS* searchStructureVariable(HashTable *h, const char* key) {
+    unsigned int index = hash(key);
+    HashSEntry entry;
+
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        unsigned int pos = (index + i) % TABLE_SIZE;
+        entry = h->tableS[pos];
+
+        // SI fonction trouvé
+        if (entry.state == OCCUPIED 
+            && entry.key != NULL
+            && strcmp(entry.key, key) == 0) {
+            return &h->tableS[pos].symbol;
+        }
+    }
+
+    return NULL;
+}
+
+static StructDef* searchField(HashTable *h, const char* name) {
+    if (!h || !name) return NULL;
+    unsigned int index = hash(name);
+
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        unsigned int pos = (index + i) % TABLE_SIZE;
+        StructDef *entry = &h->structs[pos];
+
+        // SI trouvé
+        if (entry->state == OCCUPIED 
+            && entry->structName != NULL
+            && strcmp(entry->structName, name) == 0){
+            return entry;
+        }
+    }
+    return NULL;
+}
+
 Symbol* lookup(HashTable *h, const char* key) {
     Symbol *s;
     for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
@@ -117,6 +156,28 @@ Symbol* lookupFunction(HashTable *h, const char* key) {
             return s;
         }
     }
+    return NULL;
+}
+
+SymbolS* lookupStructureVariable(HashTable *h, const char* key) {
+    SymbolS *s;
+    for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
+        s = searchStructureVariable(tmp, key);
+        if (s) {
+            return s;
+        }
+    }
+    return NULL;
+}
+
+StructDef* lookupField(HashTable *h, const char* name) {
+    StructDef *e;
+    for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
+        e = searchField(tmp, name);
+        if (e) {
+            return e;
+        }
+    } 
     return NULL;
 }
 
@@ -211,15 +272,14 @@ void freeHashTable(HashTable *h) {
         h->functionName = NULL;
     }
 
+    // Free table variables & fonctions / table variables structures
     for (size_t i = 0; i < TABLE_SIZE; i++) {
         if (h->table[i].state == OCCUPIED) {
             free(h->table[i].key);
             h->table[i].key = NULL;
             h->table[i].state = DELETED;
         }
-    }
-    
-    for (size_t i = 0; i < TABLE_SIZE; i++) {
+
         if (h->tableS[i].state == OCCUPIED) {
             free(h->tableS[i].key);
             h->tableS[i].key = NULL;
@@ -303,7 +363,7 @@ int insertStruct(HashTable *table, StructDef st) {
             table->structs[pos].structName = strdup(st.structName);
             table->structs[pos].state = OCCUPIED;
 
-            printf("INSERTED : %s\n", table->structs[pos].structName);
+            printf("INSERTED STRUCT : %s\n", table->structs[pos].structName);
             return 1;
         // Déjà dans la hash map
         } else {

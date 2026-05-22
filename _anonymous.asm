@@ -16,19 +16,6 @@ _main:
     push rbp
     mov rbp, rsp
     sub rsp, 16
-    push 4
-    push 3
-    push 2
-    pop rbx
-    pop rax
-    imul rax, rbx
-    push rax
-    pop rbx
-    pop rax
-    add rax, rbx
-    push rax
-    pop rdi
-    call my_putint
     push 0
     pop rax
     mov rsp, rbp
