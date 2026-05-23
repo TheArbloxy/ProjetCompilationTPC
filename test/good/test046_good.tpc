@@ -1,4 +1,4 @@
-// Test 46 (Nested structures)
+// Test 46 (Nested structures (currently bugged))
 
 struct engine {
     int power, size, cost;
@@ -10,6 +10,36 @@ struct aircraft {
     struct engine motor;
 };
 
+void printAircraft(int height, int width, char pilot, int power, int size, int cost) {
+    putchar(pilot);
+    putchar('\n');
+
+    putint(height);
+    putchar('x');
+    putint(width);
+    putchar('\n');
+
+    putint(power);
+    putchar('\n');
+
+    putint(size);
+    putchar('\n');
+
+    putint(cost);
+    putchar('\n');
+}
+
 int main(void) {
+    struct aircraft big;
+
+    big.height = 100;
+    big.width = 35;
+    big.pilot = 'Z';
+
+    big.motor.power = 75;
+    big.motor.size = 185;
+    big.motor.cost = 65;
+
+    printAircraft(big.height, big.width, big.pilot, big.motor.power, big.motor.size, big.motor.cost);
     return 0;
 }

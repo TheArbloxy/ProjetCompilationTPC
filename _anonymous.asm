@@ -12,22 +12,62 @@ _start:
     mov rdi, rax
     mov rax, 60
     syscall
+_callWhile:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 16
+    mov dword [rbp - 4], edi
+    movsxd rax, dword [rbp - 4]
+    push rax
+    push rax
+    push 2
+    pop rbx
+    pop rax
+    add rax, rbx
+    push rax
+    pop rax
+    mov rsp, rbp
+    pop rbp
+    ret
+    mov rsp, rbp
+    pop rbp
+    ret
 _main:
     push rbp
     mov rbp, rsp
-    sub rsp, 32
+    sub rsp, 16
     push 0
     pop rsi
     mov dword [rbp - 4], esi
-    push 0
+.Lwhile_start_0:
+    movsxd rax, dword [rbp - 4]
+    push rax
+    push rax
+    push 100
+    pop rbx
+    pop rax
+    cmp rax, rbx
+    jl .Lwhile_true_0
+    jmp .Lwhile_end_0
+.Lwhile_true_0:
+    movsxd rax, dword [rbp - 4]
+    push rax
+    push rax
+    pop rdi
+    call _callWhile
+    push rax
     pop rsi
-    mov dword [rbp - 8], esi
-    push 50
-    pop rsi
-    mov dword [rbp - 12], esi
-    push 2
-    pop rsi
-    mov dword [rbp - 16], esi
+    mov dword [rbp - 4], esi
+    jmp .Lwhile_start_0
+.Lwhile_end_0:
+    movsxd rax, dword [rbp - 4]
+    push rax
+    push rax
+    pop rdi
+    call my_putint
+    push 10
+    pop rdi
+    call my_putchar
     push 0
     pop rax
     mov rsp, rbp

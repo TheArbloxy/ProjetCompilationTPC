@@ -623,6 +623,32 @@ static void genInstr(Node *node, FILE *f, HashTable *h) {
                 fprintf(f, "%s:\n", endLabel);
                 break;
             }
+            case whileSt: {
+                Node *cond = child->firstChild;
+                Node *bodyInstr = cond->nextSibling;
+
+                int labelEnd = labelCounter++;
+
+                char startLabel[64], trueLabel[64], falseLabel[64];
+                sprintf(startLabel, ".Lwhile_start_%d", labelEnd);
+                sprintf(trueLabel, ".Lwhile_true_%d", labelEnd);
+                sprintf(falseLabel, ".Lwhile_end_%d", labelEnd);
+
+                // Point pour reboucler
+                fprintf(f, "%s:\n", startLabel);
+                genCond(cond, f, h, trueLabel, falseLabel);
+
+                // Si vrai
+                fprintf(f, "%s:\n", trueLabel);
+                genInstr(bodyInstr, f, h);
+
+                // Retest condition
+                fprintf(f, "    jmp %s\n", startLabel);
+
+                // Sortie
+                fprintf(f, "%s:\n", falseLabel);
+                break;
+            }
             case returnSt: {
                 genReturn(child, f, h);
                 break;

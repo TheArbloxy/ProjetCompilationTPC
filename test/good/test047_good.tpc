@@ -1,45 +1,17 @@
-// Test 47 (Nested structures 2 (currently bugged))
-
-struct engine {
-    int power, size, cost;
-};
-
-struct aircraft {
-    int height, width;
-    char pilot;
-    struct engine motor;
-};
-
-void printAircraft(int height, int width, char pilot, int power, int size, int cost) {
-    putchar(pilot);
-    putchar('\n');
-
-    putint(height);
-    putchar('x');
-    putint(width);
-    putchar('\n');
-
-    putint(power);
-    putchar('\n');
-
-    putint(size);
-    putchar('\n');
-
-    putint(cost);
-    putchar('\n');
-}
+// Test 47 (While)
 
 int main(void) {
-    struct aircraft big;
+    int a, b;
+    a = 0;
+    b = 0;
 
-    big.height = 100;
-    big.width = 35;
-    big.pilot = 'Z';
+    while (a < 10) {
+        a = a + 1;
+        b = b + 10;
+    }
 
-    big.motor.power = 75;
-    big.motor.size = 185;
-    big.motor.cost = 65;
+    putint(b);
+    putchar('\n');
 
-    printAircraft(big.height, big.width, big.pilot, big.motor.power, big.motor.size, big.motor.cost);
     return 0;
 }
