@@ -2,7 +2,7 @@ section .bss
     __charinput resb 1
     __buffer resb 1
     __input resb 1
-    x: resd 1
+    p: resb 5
 
 global _start
 
@@ -18,6 +18,12 @@ _main:
     mov rbp, rsp
     sub rsp, 16
     push 10
+    pop rsi
+    mov dword [rbp - 0 + 0], eax
+    push 65
+    pop rsi
+    mov byte [rbp - 4 + 4], sil
+    mov eax, dword [rbp - 0 + 0]
     pop rdi
     call my_putint
     push 0

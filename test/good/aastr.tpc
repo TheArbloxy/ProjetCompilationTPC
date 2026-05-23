@@ -1,13 +1,17 @@
-struct point {
-    int a;
-    int b;
+struct Point {
+    int x;
+    char c;
 };
 
-struct point p, p2;
-int x;
+struct Point p;
 
 int main(void) {
-    p.a = 10;
-    putint(p.a);
+
+    p.x = 10;
+    p.c = 'A';
+
+    putint(p.x);
+    // putchar(p.c);
+
     return 0;
 }

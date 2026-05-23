@@ -47,7 +47,7 @@ int insertField(StructDef *def, StructEntry field) {
             def->fields[pos].key = strdup(field.key);
             def->fields[pos].state = OCCUPIED;
 
-            printf("INSERTED FIELD : %s\n", def->fields[pos].key);
+            // printf("INSERTED FIELD : %s\n", def->fields[pos].key);
             return 1;
         // Déjà dans la hash map
         } else {
@@ -92,15 +92,13 @@ static void printStructTable(StructDef *s) {
             case DELETED:
                 break;
             default: {
-                SymbolStruct st = e->symbol;
-
-                printf("KEY = %-20s | TYPE = %-8s ", e->key, StringFromLabel[st.typ]);
-                printf("| %-6s ", st.isGlobal ? "Global" : "Local");
+                printf("KEY = %-20s | TYPE = %-8s ", e->key, StringFromLabel[e->typ]);
+                printf("| %-6s ", e->isGlobal ? "Global" : "Local");
                 printf("| ADDRESS = %-3d | SIZE = %-3d ", e->offset, e->size);
 
-                switch(st.typ) {
+                switch(e->typ) {
                     case SYM_STRUCT:
-                        printf("| STRUCT = %-10s ", st.name);
+                        printf("| STRUCT = %-10s ", e->structName);
                         break;
                     default:
                         break;
@@ -143,9 +141,9 @@ void freeStructScope(StructDef *s) {
                     free(s[i].fields[j].key);
                     s[i].fields[j].key = NULL;
 
-                    if (s[i].fields[j].symbol.name) {
-                        free(s[i].fields[j].symbol.name);
-                        s[i].fields[j].symbol.name = NULL;
+                    if (s[i].fields[j].structName) {
+                        free(s[i].fields[j].structName);
+                        s[i].fields[j].structName = NULL;
                     }
                     
                 }

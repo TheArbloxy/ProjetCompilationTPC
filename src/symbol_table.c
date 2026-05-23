@@ -363,7 +363,7 @@ int insertStruct(HashTable *table, StructDef st) {
             table->structs[pos].structName = strdup(st.structName);
             table->structs[pos].state = OCCUPIED;
 
-            printf("INSERTED STRUCT : %s\n", table->structs[pos].structName);
+            // printf("INSERTED STRUCT : %s\n", table->structs[pos].structName);
             return 1;
         // Déjà dans la hash map
         } else {

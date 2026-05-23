@@ -48,15 +48,15 @@ static void handleDeclStruct(Node *n, HashTable *table) {
                     // printf("LABEL N : %s\n", fieldType ? strToLabel(fieldType->label) : "null");
                     switch(fieldType->label) {
                         case typeInt:
-                            entry.symbol.typ = SYM_INT;
+                            entry.typ = SYM_INT;
                             entry.size = 4;
                             break;
                         case typeChar:
-                            entry.symbol.typ = SYM_CHAR;
+                            entry.typ = SYM_CHAR;
                             entry.size = 1;
                             break;
                         case typeStruct: {
-                            entry.symbol.typ = SYM_STRUCT;
+                            entry.typ = SYM_STRUCT;
                             StructDef *nested = lookupStruct(table, fieldType->nextSibling->value.val_str);
                             if (!nested) {
                                 printf("Erreur ligne %d : structure %s non déclarée\n",
@@ -65,7 +65,7 @@ static void handleDeclStruct(Node *n, HashTable *table) {
                                 break; 
                             }
 
-                            entry.symbol.name = strdup(nested->structName);
+                            entry.structName = strdup(nested->structName);
                             entry.size = nested->totalSize;
                             break;
                         }
@@ -97,8 +97,8 @@ static void handleDeclStruct(Node *n, HashTable *table) {
                 s.structName = strdup(def->structName);
                 s.size = def->totalSize;
 
-                printf("TYPE STRUCT = %s | SIZE = %d\n", s.structName, s.size);
-                printf("VAR = %s\n", id->value.val_str);
+                // printf("TYPE STRUCT = %s | SIZE = %d\n", s.structName, s.size);
+                // printf("VAR = %s\n", id->value.val_str);
 
                 // Check scope
                 if (isGlobalScope(table)) {
@@ -309,7 +309,7 @@ static Symbol handleEval(Node *n, HashTable *table) {
 
                     // Si champ intermédiaire (ex : p.color.r) : doit être une structure
                     if (field->nextSibling) {
-                        if (!lookupStruct(table, fieldSymbol->symbol.name)) {
+                        if (!lookupStruct(table, fieldSymbol->structName)) {
                             printf("Erreur ligne %d : structure imbriquée %s introuvable\n",
                                 n->lineno, field->value.val_str);
                             semanticErrorCount++;
@@ -451,7 +451,7 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
 
             // Si champ intermédiaire (ex : p.color.r) : doit être une structure
             if (field->nextSibling) {
-                if (!lookupStruct(table, fieldSymbol->symbol.name)) {
+                if (!lookupStruct(table, fieldSymbol->structName)) {
                     printf("Erreur ligne %d : structure imbriquée %s introuvable\n",
                         instr->lineno, field->value.val_str);
                     semanticErrorCount++;
@@ -463,7 +463,7 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
             field = field->nextSibling;
         }
 
-        typeValue = fieldSymbol->symbol.typ;
+        typeValue = fieldSymbol->typ;
 
     } else { // Variable (int ou char)
         Node *variableName = lhs->firstChild;

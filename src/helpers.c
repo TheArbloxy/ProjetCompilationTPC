@@ -129,11 +129,11 @@ extern int align16(int n) {
 
 // Runtime functions
 
-extern void write_runtime_bss(FILE *f) {
+extern void writeRuntimeBss(FILE *f) {
     fprintf(f, "    __charinput resb 1\n    __buffer resb 1\n    __input resb 1\n");
 } 
 
-extern void write_my_getchar(FILE *f) {
+extern void writeMyGetchar(FILE *f) {
     fprintf(f, "\nmy_getchar: ; read (stdin, __charinput, 1)\n"
                 "   mov rax, 0\n"
                 "   mov rdi, 0\n"
@@ -147,7 +147,7 @@ extern void write_my_getchar(FILE *f) {
     );
 } 
 
-extern void write_my_putchar(FILE *f) {
+extern void writeMyPutchar(FILE *f) {
     fprintf(f, "my_putchar: ; stocke le caractère\n"
                 "   mov [__buffer], dil\n\n"
 
@@ -162,7 +162,7 @@ extern void write_my_putchar(FILE *f) {
     );
 }
 
-extern void write_my_getint(FILE *f) {
+extern void writeMyGetint(FILE *f) {
     fprintf(f, "\nmy_getint:\n"
                 "   push rbx\n"
                 "   xor rbx, rdx ; résultat = 0\n\n"
@@ -223,7 +223,7 @@ extern void write_my_getint(FILE *f) {
         );
 }
 
-extern void write_my_putint(FILE *f) {
+extern void writeMyPutint(FILE *f) {
     fprintf(f,  "\nmy_putint:\n"
 
                 "   push rbx\n"

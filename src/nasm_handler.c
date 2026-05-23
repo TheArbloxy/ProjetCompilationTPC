@@ -12,7 +12,81 @@ static const char *ArgumentsRegs2[] = {
     "edi", "esi", "edx", "ecx", "r8d", "r9d"
 };
 
-void genLoadVariable(Node *node, FILE *f, HashTable *h) {
+static FieldAccessInfo resolveFieldAccess(Node *node, HashTable *h) {
+    /*
+    Gets a field info for NASM.
+    */
+    FieldAccessInfo info = {0};
+    Node *base = node->firstChild;
+
+    // Variable de base
+    SymbolS *baseStruct = lookupStructureVariable(h, base->value.val_str);
+    if (!baseStruct) {
+        printf("Structure introuvable\n");
+        return info;
+    }
+
+    StructDef *currentStruct = lookupField(h, baseStruct->structName);
+    if (!currentStruct) {
+        printf("Variable de la structure introuvable\n");
+        return info;
+    }
+
+    // Champs suivants (ex : p.a; ou p.color.r;)
+    Node *field = base->nextSibling;
+    StructEntry *fieldSymbol = NULL;
+
+    while (field) {
+        fieldSymbol = lookupEntry(currentStruct, field->value.val_str);
+        if (!fieldSymbol) {
+            printf("Champ de la structure introuvable\n");
+            return info;
+        }
+
+        // Si champ intermédiaire (ex : p.color.r) : doit être une structure
+        if (field->nextSibling) {
+            if (!lookupStruct(h, fieldSymbol->structName)) {
+                printf("Champ imbriquée de la introuvable\n");
+                return info;
+            }
+        }
+
+        field = field->nextSibling;
+
+        info.baseSymbol = fieldSymbol;
+        info.totalOffset += fieldSymbol->offset;
+        info.finalType = fieldSymbol->typ;
+    }
+
+    return info;
+}
+
+static void genLoadStructField(Node *node, FILE *f, HashTable *h) {
+    /*
+    Generates structure field accessing in NASM.
+    */
+    FieldAccessInfo info = resolveFieldAccess(node, h);
+
+    StructEntry *s = info.baseSymbol;
+    if (!s) return;
+
+    // Adresse de base
+    if (s->isGlobal) {
+        if (info.finalType == SYM_CHAR) {
+            fprintf(f, "    movzx eax, byte [%s + %d]\n", s->key, info.totalOffset);
+        } else {
+            fprintf(f, "    mov eax, dword [%s + %d]\n", s->key, info.totalOffset);
+        }
+    } else {
+        if (info.finalType == SYM_CHAR) {
+            fprintf(f, "    movzx eax, byte [rbp - %d + %d]\n", s->offset, info.totalOffset);
+        } else {
+            fprintf(f, "    mov eax, dword [rbp - %d + %d]\n", s->offset, info.totalOffset);
+        }
+    }
+}
+
+static void genLoadVariable(Node *node, FILE *f, HashTable *h) {
     /*
     Generates variable accessing in NASM.
     */
@@ -30,7 +104,37 @@ void genLoadVariable(Node *node, FILE *f, HashTable *h) {
     fprintf(f, "    push rax\n");
 }
 
-void genStoreVariable(Node *node, FILE *f, HashTable *h) {
+static void genStoreStructField(Node *node, FILE *f, HashTable *h) {
+    /*
+    Generates structure field storing in NASM.
+    */
+    if (!node) return;
+
+    FieldAccessInfo info = resolveFieldAccess(node, h);
+
+    StructEntry *s = info.baseSymbol;
+    if (!s) return;
+
+    // résultat au sommet de la pile
+    fprintf(f, "    pop rsi\n");
+
+    // Adresse de base
+    if (s->isGlobal) {
+        if (info.finalType == SYM_CHAR) {
+            fprintf(f, "    mov byte [%s + %d], sil\n", s->key, info.totalOffset);
+        } else {
+            fprintf(f, "    mov dword [%s + %d], esi\n", s->key, info.totalOffset);
+        }
+    } else {
+        if (info.finalType == SYM_CHAR) {
+            fprintf(f, "    mov byte [rbp - %d + %d], sil\n", s->offset, info.totalOffset);
+        } else {
+            fprintf(f, "    mov dword [rbp - %d + %d], eax\n", s->offset, info.totalOffset);
+        }
+    }
+}
+
+static void genStoreVariable(Node *node, FILE *f, HashTable *h) {
     /*
     Generates variable storing in NASM.
     */
@@ -51,7 +155,7 @@ void genStoreVariable(Node *node, FILE *f, HashTable *h) {
     }
 }
 
-void genExp(Node *node, FILE *f, HashTable *h) {
+static void genExp(Node *node, FILE *f, HashTable *h) {
     /*
     Generates expression handling in NASM.
     */
@@ -77,14 +181,12 @@ void genExp(Node *node, FILE *f, HashTable *h) {
 
         // cas des accès à une variable
         case fieldAccess: {
-            Node *idNode = node->firstChild;
-
-            if (!idNode) {
-                printf("Erreur : fieldAccess vide\n");
-                return;
+            if (numberArgs(node) > 1) {
+                genLoadStructField(node, f, h);
+            } else {
+                Node *idNode = node->firstChild;
+                genLoadVariable(idNode, f, h);
             }
-
-            genLoadVariable(idNode, f, h);
             break;
         }
 
@@ -182,7 +284,7 @@ void genExp(Node *node, FILE *f, HashTable *h) {
     }
 }
 
-void genCond(Node *node, FILE *f, HashTable *h, char *trueLabel, char *falseLabel) {
+static void genCond(Node *node, FILE *f, HashTable *h, char *trueLabel, char *falseLabel) {
     /*
     Generates comparaison expressions in NASM.
     */
@@ -286,7 +388,7 @@ void genCond(Node *node, FILE *f, HashTable *h, char *trueLabel, char *falseLabe
 
 }
 
-void genBoolExp(Node *node, FILE *f, HashTable *h) {
+static void genBoolExp(Node *node, FILE *f, HashTable *h) {
     /*
     Generates a boolean expression (0/1) in NASM.
     */
@@ -313,7 +415,7 @@ void genBoolExp(Node *node, FILE *f, HashTable *h) {
     fprintf(f, "%s:\n", endLabel);
 }
 
-void genAssign(Node *node, FILE *f, HashTable *h) {
+static void genAssign(Node *node, FILE *f, HashTable *h) {
     /*
     Generates assigns in NASM.
     */
@@ -332,10 +434,14 @@ void genAssign(Node *node, FILE *f, HashTable *h) {
         genExp(expr, f, h);
     }
 
-    genStoreVariable(var->firstChild, f, h);
+    if (numberArgs(var) > 1) {
+        genStoreStructField(var, f, h);
+    } else {
+        genStoreVariable(var->firstChild, f, h);
+    }
 }
 
-void genFunctCall(Node *node, FILE *f, HashTable *h) {
+static void genFunctCall(Node *node, FILE *f, HashTable *h) {
     /*
     Generates function calls in NASM.
     */
@@ -362,7 +468,7 @@ void genFunctCall(Node *node, FILE *f, HashTable *h) {
     }
 }
 
-void genFunctBeginning(Node *node, FILE *f) {
+static void genFunctBeginning(Node *node, FILE *f) {
     /*
     Generates the beginning of a function in NASM.
     */
@@ -377,7 +483,7 @@ void genFunctBeginning(Node *node, FILE *f) {
     }
 }
 
-void genFunctEnd(FILE *f) {
+static void genFunctEnd(FILE *f) {
     /*
     Generates the end of a function in NASM.
     */
@@ -386,7 +492,7 @@ void genFunctEnd(FILE *f) {
     fprintf(f, "    ret\n");
 }
 
-void genReturn(Node *node, FILE *f, HashTable *h) {
+static void genReturn(Node *node, FILE *f, HashTable *h) {
     /*
     Generates a return instruction in NASM.
     */
@@ -407,14 +513,14 @@ void genReturn(Node *node, FILE *f, HashTable *h) {
     genFunctEnd(f);
 }
 
-void genReturnVoid(FILE *f) {
+static void genReturnVoid(FILE *f) {
     /*
     Generates a void return instruction in NASM.
     */
     fprintf(f, "    ret\n");
 }
 
-void genInstr(Node *node, FILE *f, HashTable *h) {
+static void genInstr(Node *node, FILE *f, HashTable *h) {
     /*
     Generates instructions in NASM.
     */
@@ -498,17 +604,17 @@ void genInstr(Node *node, FILE *f, HashTable *h) {
     }
 }
 
-void genGlobalVariables(HashTable* h, FILE *f) {
+static void genGlobalVariables(HashTable* h, FILE *f) {
     /*
     Generates global variables handling in NASM/
     */
     if (!h) return;
 
     fprintf(f, "section .bss\n");
-    write_runtime_bss(f);
+    writeRuntimeBss(f);
 
     for (int i = 0; i < TABLE_SIZE; i++) {
-        HashEntry *entry = &h->table[i];
+        HashEntry *entry = &h->table[i]; // Variables & fonctions
         if (entry->state == OCCUPIED) {
             Symbol *s = &entry->symbol;
 
@@ -518,19 +624,28 @@ void genGlobalVariables(HashTable* h, FILE *f) {
                 case SYM_FUNCTION:
                 case SYM_NONE:
                 case SYM_STRING:
-                case SYM_STRUCT:
                     break;
                 case SYM_INT:
                 case SYM_CHAR:
                     fprintf(f, "    %s: %s 1\n", entry->key, getReserveDirective(s->typ));
+                case SYM_STRUCT:
+                    break;
+                default:
+                    break;
             }
+        }
+
+        HashSEntry *entry2 = &h->tableS[i]; // Variables et structures
+        if (entry2->state == OCCUPIED) {
+            SymbolS *s = &entry2->symbol;
+            fprintf(f, "    %s: resb %d\n", entry2->key, s->size);
         }
     }
 
     fprintf(f, "\n");
 }
 
-void genParametreStockage(Node *node, FILE *f, HashTable *h) {
+static void genParametreStockage(Node *node, FILE *f, HashTable *h) {
     /*
     Generates function's parameters handling in NASM.
     */
@@ -557,7 +672,7 @@ void genParametreStockage(Node *node, FILE *f, HashTable *h) {
 
 }
 
-int isMainFunction(Node *node) {
+static int isMainFunction(Node *node) {
     /*
     Checks if the node is the main function.
     */
@@ -574,7 +689,7 @@ int isMainFunction(Node *node) {
     return 0;
 }
 
-void parcoursArbre(Node *n, FILE *f) {
+extern void parcoursArbre(Node *n, FILE *f) {
     /*
     Start of the NASM compile progress.
     */
@@ -615,8 +730,8 @@ void parcoursArbre(Node *n, FILE *f) {
             break;
     }
 
-    write_my_getchar(f);
-    write_my_putchar(f);
-    write_my_getint(f);
-    write_my_putint(f);
+    writeMyGetchar(f);
+    writeMyPutchar(f);
+    writeMyGetint(f);
+    writeMyPutint(f);
 }

@@ -24,16 +24,13 @@ typedef enum {
 } EntryState;
 
 typedef struct {
-    TypeValue typ;
-    char* name;
-    int isGlobal;
-} SymbolStruct;
-
-typedef struct {
     char* key;
+    char* structName;
+
     int offset;
     int size;
-    SymbolStruct symbol;
+    int isGlobal;
+    TypeValue typ;
     EntryState state;
 } StructEntry;
 
@@ -44,6 +41,12 @@ typedef struct {
     StructEntry fields[TABLE_SIZE];
     EntryState state;
 } StructDef; // Contains a struct, with all its fields
+
+typedef struct {
+    StructEntry *baseSymbol;
+    int totalOffset;
+    TypeValue finalType;
+} FieldAccessInfo;
 
 void initStructScope(StructDef* s, int startingAdress);
 int insertField(StructDef *def, StructEntry field);
