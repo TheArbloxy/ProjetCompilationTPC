@@ -81,7 +81,7 @@ StructEntry* lookupEntry(StructDef *s, const char* name) {
 
 static void printStructTable(StructDef *s) {
     int isEmpty = 1; // Flag checking if the table is empty
-    printf("STRUCT %-20s\n", s->structName);
+    printf("%s STRUCT %-20s\n", s->isGlobal ? "GLOBAL" : "LOCAL", s->structName);
     printf("TOTAL SIZE = %-20d\n", s->totalSize);
 
     for (size_t i = 0; i < TABLE_SIZE; i++) {
@@ -93,7 +93,6 @@ static void printStructTable(StructDef *s) {
                 break;
             default: {
                 printf("KEY = %-20s | TYPE = %-8s ", e->key, StringFromLabel[e->typ]);
-                printf("| %-6s ", e->isGlobal ? "Global" : "Local");
                 printf("| ADDRESS = %-3d | SIZE = %-3d ", e->offset, e->size);
 
                 switch(e->typ) {

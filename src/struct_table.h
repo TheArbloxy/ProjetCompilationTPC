@@ -29,7 +29,6 @@ typedef struct {
 
     int offset;
     int size;
-    int isGlobal;
     TypeValue typ;
     EntryState state;
 } StructEntry;
@@ -37,16 +36,11 @@ typedef struct {
 typedef struct {
     char* structName;
     int totalSize;
+    int isGlobal;
 
     StructEntry fields[TABLE_SIZE];
     EntryState state;
 } StructDef; // Contains a struct, with all its fields
-
-typedef struct {
-    StructEntry *baseSymbol;
-    int totalOffset;
-    TypeValue finalType;
-} FieldAccessInfo;
 
 void initStructScope(StructDef* s, int startingAdress);
 int insertField(StructDef *def, StructEntry field);

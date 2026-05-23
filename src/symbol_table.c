@@ -100,7 +100,7 @@ static Symbol* searchFunction(HashTable *h, const char* key) {
     return NULL;
 }
 
-static SymbolS* searchStructureVariable(HashTable *h, const char* key) {
+static HashSEntry* searchStructureVariable(HashTable *h, const char* key) {
     unsigned int index = hash(key);
     HashSEntry entry;
 
@@ -112,7 +112,7 @@ static SymbolS* searchStructureVariable(HashTable *h, const char* key) {
         if (entry.state == OCCUPIED 
             && entry.key != NULL
             && strcmp(entry.key, key) == 0) {
-            return &h->tableS[pos].symbol;
+            return &h->tableS[pos];
         }
     }
 
@@ -159,8 +159,8 @@ Symbol* lookupFunction(HashTable *h, const char* key) {
     return NULL;
 }
 
-SymbolS* lookupStructureVariable(HashTable *h, const char* key) {
-    SymbolS *s;
+HashSEntry* lookupStructureVariable(HashTable *h, const char* key) {
+    HashSEntry *s;
     for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
         s = searchStructureVariable(tmp, key);
         if (s) {

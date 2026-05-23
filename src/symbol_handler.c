@@ -20,6 +20,9 @@ static void handleDeclStruct(Node *n, HashTable *table) {
         case declStruct: {
             StructDef def = {0};
             def.structName = strdup(ident->value.val_str);
+            if (isGlobalScope(table)) {
+                def.isGlobal = 1;
+            }
 
             int currentOffset = 0;
 
@@ -279,7 +282,7 @@ static Symbol handleEval(Node *n, HashTable *table) {
             if (numberArgs(n) > 1) { // Champ d'une structure (ex : p.a = 10;)
                 Node *baseVar = n->firstChild;
 
-                SymbolS *baseStruct = lookupStructureVariable(table, baseVar->value.val_str);
+                HashSEntry *baseStruct = lookupStructureVariable(table, baseVar->value.val_str);
                 if (!baseStruct) {
                     printf("Erreur ligne %d : structure %s non déclarée\n",
                         n->lineno, baseVar->value.val_str);
@@ -287,10 +290,10 @@ static Symbol handleEval(Node *n, HashTable *table) {
                     return makeIntSymbol(0);
                 }
 
-                StructDef *currentStruct = lookupField(table, baseStruct->structName);
+                StructDef *currentStruct = lookupField(table, baseStruct->symbol.structName);
                 if (!currentStruct) {
                     printf("Erreur interne : structure %s introuvable\n",
-                        baseStruct->structName);
+                        baseStruct->symbol.structName);
                     return makeIntSymbol(0);
                 }
                 
@@ -320,7 +323,13 @@ static Symbol handleEval(Node *n, HashTable *table) {
                     field = field->nextSibling;
                 }
 
-                return makeIntSymbol(0);
+                switch (fieldSymbol->typ) {
+                    case SYM_CHAR:
+                        return makeCharSymbol('a');
+                        break;
+                    default:
+                        return makeIntSymbol(0);
+                }
                 
             } else { // Variables & fonctions
                 Node *idNode = n->firstChild;
@@ -421,7 +430,7 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
     // Récupérer variable (lhs)
     if (numberArgs(lhs) > 1) { // Champ d'une structure (ex : p.a = 10;)
         Node *baseVar = lhs->firstChild;
-        SymbolS *baseStruct = lookupStructureVariable(table, baseVar->value.val_str);
+        HashSEntry *baseStruct = lookupStructureVariable(table, baseVar->value.val_str);
         if (!baseStruct) {
             printf("Erreur ligne %d : structure %s non déclarée\n",
                 instr->lineno, baseVar->value.val_str);
@@ -429,10 +438,10 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
             return;
         }
 
-        StructDef *currentStruct = lookupField(n->symTable, baseStruct->structName);
+        StructDef *currentStruct = lookupField(n->symTable, baseStruct->symbol.structName);
         if (!currentStruct) {
             printf("Erreur interne : structure %s introuvable\n",
-                baseStruct->structName);
+                baseStruct->symbol.structName);
             return;
         }
         

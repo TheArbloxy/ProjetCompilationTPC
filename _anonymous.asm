@@ -2,7 +2,6 @@ section .bss
     __charinput resb 1
     __buffer resb 1
     __input resb 1
-    p: resb 5
 
 global _start
 
@@ -13,19 +12,71 @@ _start:
     mov rdi, rax
     mov rax, 60
     syscall
+_add:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 16
+    mov dword [rbp - 4], edi
+    mov dword [rbp - 8], esi
+    mov eax, dword [rbp - 4]
+    push rax
+    mov eax, dword [rbp - 8]
+    push rax
+    pop rbx
+    pop rax
+    add rax, rbx
+    push rax
+    pop rax
+    mov rsp, rbp
+    pop rbp
+    ret
+_sub:
+    push rbp
+    mov rbp, rsp
+    sub rsp, 16
+    mov dword [rbp - 4], edi
+    mov dword [rbp - 8], esi
+    mov eax, dword [rbp - 4]
+    push rax
+    mov eax, dword [rbp - 8]
+    push rax
+    pop rbx
+    pop rax
+    sub rax, rbx
+    push rax
+    pop rax
+    mov rsp, rbp
+    pop rbp
+    ret
 _main:
     push rbp
     mov rbp, rsp
     sub rsp, 16
-    push 10
+    push 1
+    push 2
     pop rsi
-    mov dword [rbp - 0 + 0], eax
-    push 65
+    pop rdi
+    call _add
+    push rax
+    push 4
+    push 2
     pop rsi
-    mov byte [rbp - 4 + 4], sil
-    mov eax, dword [rbp - 0 + 0]
+    pop rdi
+    call _sub
+    push rax
+    pop rbx
+    pop rax
+    imul rax, rbx
+    push rax
+    pop rsi
+    mov dword [rbp - 4], esi
+    mov eax, dword [rbp - 4]
+    push rax
     pop rdi
     call my_putint
+    push 10
+    pop rdi
+    call my_putchar
     push 0
     pop rax
     mov rsp, rbp
@@ -58,7 +109,7 @@ my_putchar: ; stocke le caractère
 
 my_getint:
    push rbx
-   xor rbx, rdx ; résultat = 0
+   xor rbx, rbx ; résultat = 0
 
 .read_first:
    ; read (stdin, __input, 1)
@@ -67,6 +118,10 @@ my_getint:
    mov rsi, __input
    mov rdx, 1
    syscall
+
+   ; Si read renvoie <= 0, on quitte
+   cmp rax, 0
+   jle .error
 
    mov al, [__input]
 
@@ -91,6 +146,8 @@ my_getint:
    mov rdx, 1
    syscall
 
+   ; si EOF, on s'arrête   cmp rax, 0
+   jle .done
    mov al, [__input]
    ; continuer si chiffre
 
@@ -98,7 +155,7 @@ my_getint:
    jl .done
 
    cmp al, '9'
-   jl .done
+   jg .done
 
    jmp .loop
 .done:
@@ -121,23 +178,29 @@ my_putint:
    cmp rax, 0
    jge .check_zero
    neg rax
+   ; sauvegarder rax car my_putchar peut modifier les registres volatils   push rax
    mov dil, '-'
    call my_putchar
+   pop rax
+
 .check_zero:
    cmp rax, 0
    jne .extract
    mov dil, '0'
    call my_putchar
-   jmp .done
+   jmp .done_putint
+
 .extract:
    mov rbx, 10
-.loop:
+
+.loop_extract:
    xor rdx, rdx
    div rbx
    push rdx
    inc r12
    cmp rax, 0
-   jne .loop
+   jne .loop_extract
+
 .print:
    pop rdx
    add dl, '0'
@@ -145,7 +208,8 @@ my_putint:
    call my_putchar
    dec r12
    jnz .print
-.done:
+
+.done_putint:
    pop r12
    pop rbx
    ret

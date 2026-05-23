@@ -20,17 +20,19 @@ static FieldAccessInfo resolveFieldAccess(Node *node, HashTable *h) {
     Node *base = node->firstChild;
 
     // Variable de base
-    SymbolS *baseStruct = lookupStructureVariable(h, base->value.val_str);
+    HashSEntry *baseStruct = lookupStructureVariable(h, base->value.val_str);
     if (!baseStruct) {
         printf("Structure introuvable\n");
         return info;
     }
 
-    StructDef *currentStruct = lookupField(h, baseStruct->structName);
+    StructDef *currentStruct = lookupField(h, baseStruct->symbol.structName);
     if (!currentStruct) {
         printf("Variable de la structure introuvable\n");
         return info;
     }
+
+    // printf("STRUCT V : %s\n", baseStruct->key);
 
     // Champs suivants (ex : p.a; ou p.color.r;)
     Node *field = base->nextSibling;
@@ -58,6 +60,7 @@ static FieldAccessInfo resolveFieldAccess(Node *node, HashTable *h) {
         info.finalType = fieldSymbol->typ;
     }
 
+    info.entry = baseStruct;
     return info;
 }
 
@@ -71,11 +74,11 @@ static void genLoadStructField(Node *node, FILE *f, HashTable *h) {
     if (!s) return;
 
     // Adresse de base
-    if (s->isGlobal) {
+    if (info.entry->symbol.isGlobal) { // s->isGlobal;
         if (info.finalType == SYM_CHAR) {
-            fprintf(f, "    movzx eax, byte [%s + %d]\n", s->key, info.totalOffset);
+            fprintf(f, "    movzx eax, byte [%s + %d]\n", info.entry->key, info.totalOffset);
         } else {
-            fprintf(f, "    mov eax, dword [%s + %d]\n", s->key, info.totalOffset);
+            fprintf(f, "    mov eax, dword [%s + %d]\n", info.entry->key, info.totalOffset);
         }
     } else {
         if (info.finalType == SYM_CHAR) {
@@ -119,11 +122,11 @@ static void genStoreStructField(Node *node, FILE *f, HashTable *h) {
     fprintf(f, "    pop rsi\n");
 
     // Adresse de base
-    if (s->isGlobal) {
+    if (info.entry->symbol.isGlobal) { // s->isGlobal;
         if (info.finalType == SYM_CHAR) {
-            fprintf(f, "    mov byte [%s + %d], sil\n", s->key, info.totalOffset);
+            fprintf(f, "    mov byte [%s + %d], sil\n", info.entry->key, info.totalOffset);
         } else {
-            fprintf(f, "    mov dword [%s + %d], esi\n", s->key, info.totalOffset);
+            fprintf(f, "    mov dword [%s + %d], esi\n", info.entry->key, info.totalOffset);
         }
     } else {
         if (info.finalType == SYM_CHAR) {
@@ -164,14 +167,7 @@ static void genExp(Node *node, FILE *f, HashTable *h) {
     switch (node->label) {
         // constante (int)
         case id:
-            switch(node->typ) {
-                // int
-                case VALUE_INT:
-                    fprintf(f, "    push %d\n", node->value.val_int);
-                    break;
-                default:
-                    break;
-            }
+            fprintf(f, "    push %d\n", node->value.val_int);
             break;
 
         // constante (char)
@@ -183,6 +179,7 @@ static void genExp(Node *node, FILE *f, HashTable *h) {
         case fieldAccess: {
             if (numberArgs(node) > 1) {
                 genLoadStructField(node, f, h);
+                fprintf(f, "    push rax\n");
             } else {
                 Node *idNode = node->firstChild;
                 genLoadVariable(idNode, f, h);

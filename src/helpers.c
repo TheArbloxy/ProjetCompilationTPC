@@ -165,7 +165,7 @@ extern void writeMyPutchar(FILE *f) {
 extern void writeMyGetint(FILE *f) {
     fprintf(f, "\nmy_getint:\n"
                 "   push rbx\n"
-                "   xor rbx, rdx ; résultat = 0\n\n"
+                "   xor rbx, rbx ; résultat = 0\n\n"
 
                 ".read_first:\n"
                 "   ; read (stdin, __input, 1)\n"
@@ -174,6 +174,10 @@ extern void writeMyGetint(FILE *f) {
                 "   mov rsi, __input\n"
                 "   mov rdx, 1\n"
                 "   syscall\n\n"
+
+                "   ; Si read renvoie <= 0, on quitte\n"
+                "   cmp rax, 0\n"
+                "   jle .error\n\n"
 
                 "   mov al, [__input]\n\n"
 
@@ -200,6 +204,10 @@ extern void writeMyGetint(FILE *f) {
                 "   mov rdx, 1\n"
                 "   syscall\n\n"
 
+                "   ; si EOF, on s'arrête"
+                "   cmp rax, 0\n"
+                "   jle .done\n"
+
                 "   mov al, [__input]\n"
 
                 "   ; continuer si chiffre\n\n"
@@ -207,7 +215,7 @@ extern void writeMyGetint(FILE *f) {
                 "   jl .done\n\n"
 
                 "   cmp al, '9'\n"
-                "   jl .done\n\n"
+                "   jg .done\n\n"
 
                 "   jmp .loop\n"
 
@@ -235,53 +243,43 @@ extern void writeMyPutint(FILE *f) {
                 "   ; négatif\n"
                 "   cmp rax, 0\n"
                 "   jge .check_zero\n"
-
                 "   neg rax\n"
 
+                "   ; sauvegarder rax car my_putchar peut modifier les registres volatils"
+                "   push rax\n"
                 "   mov dil, '-'\n"
                 "   call my_putchar\n"
+                "   pop rax\n\n"
 
                 ".check_zero:\n"
-
                 "   cmp rax, 0\n"
                 "   jne .extract\n"
-
                 "   mov dil, '0'\n"
                 "   call my_putchar\n"
-                "   jmp .done\n"
+                "   jmp .done_putint\n\n"
 
                 ".extract:\n"
+                "   mov rbx, 10\n\n"
 
-                "   mov rbx, 10\n"
-
-                ".loop:\n"
-
+                ".loop_extract:\n"
                 "   xor rdx, rdx\n"
                 "   div rbx\n"
-
                 "   push rdx\n"
                 "   inc r12\n"
-
                 "   cmp rax, 0\n"
-                "   jne .loop\n"
+                "   jne .loop_extract\n\n"
 
                 ".print:\n"
-
                 "   pop rdx\n"
-
                 "   add dl, '0'\n"
-
                 "   mov dil, dl\n"
                 "   call my_putchar\n"
-
                 "   dec r12\n"
-                "   jnz .print\n"
+                "   jnz .print\n\n"
 
-                ".done:\n"
-
+                ".done_putint:\n"
                 "   pop r12\n"
                 "   pop rbx\n"
-
                 "   ret\n"
     );
 }
