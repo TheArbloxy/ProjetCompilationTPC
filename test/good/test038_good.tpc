@@ -1,0 +1,14 @@
+// Test 38 (Function using different types as arguments)
+
+void printChar3(int x, char a) {
+    putint(x);
+    putchar(a);
+    putchar(a);
+    putchar(a);
+    putchar('\n');
+}
+
+int main(void) {
+    printChar3(1, 'a');
+    return 0;
+}

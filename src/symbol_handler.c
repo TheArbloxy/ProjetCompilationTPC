@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include "symbol_handler.h"
 
-static int globalAddress = 0;
 static int semanticErrorCount = 0;
 
 static void handleDeclStruct(Node *n, HashTable *table) {
@@ -100,28 +99,22 @@ static void handleDeclStruct(Node *n, HashTable *table) {
                 s.structName = strdup(def->structName);
                 s.size = def->totalSize;
 
+                if (isGlobalScope(table)) {
+                    s.isGlobal = 1;
+                }
+
                 // printf("TYPE STRUCT = %s | SIZE = %d\n", s.structName, s.size);
                 // printf("VAR = %s\n", id->value.val_str);
 
                 // Check scope
-                if (isGlobalScope(table)) {
-                    s.address = globalAddress;
-                    s.isGlobal = 1;
-                } else {
-                    s.address = table->relativeAddress;
-                    s.isGlobal = 0;
-                }
+                s.address = table->relativeAddress;
 
                 if (!insertStructVariable(table, id->value.val_str, s)) {
                     printf("Erreur ligne %d : variable %s déjà déclarée\n",
                         id->lineno, id->value.val_str);
                     semanticErrorCount++;
                 } else {
-                    if (isGlobalScope(table)) {
-                        s.address += def->totalSize;
-                    } else {
-                        table->relativeAddress += def->totalSize;
-                    }
+                    table->relativeAddress += def->totalSize;
                 }
             }
             break;
@@ -144,6 +137,10 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
 
                 for (Node *id = ids->firstChild; id; id = id->nextSibling) {
                     Symbol s = {0};
+
+                    if (isGlobalScope(table)) {
+                        s.isGlobal = 1;
+                    }
                     
                     // Check type
                     switch (typeNode->label) {
@@ -155,27 +152,18 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
                             break;
                         default:
                             s.typ = SYM_NONE;
+                            break;
                     }
 
                     // Check scope
-                    if (isGlobalScope(table)) {
-                        s.address = globalAddress;
-                        s.isGlobal = 1;
-                    } else {
-                        s.address = table->relativeAddress;
-                        s.isGlobal = 0;
-                    }
+                    s.address = table->relativeAddress;
 
                     if (!insert(table, id->value.val_str, s)) {
                         printf("Erreur ligne %d : variable %s déjà déclarée\n",
                             id->lineno, id->value.val_str);
                         semanticErrorCount++;
                     } else {
-                        if (isGlobalScope(table)) {
-                            s.address += sizeofType(s.typ);
-                        } else {
-                            table->relativeAddress += sizeofType(s.typ);
-                        }
+                        table->relativeAddress += sizeofType(s.typ);
                     }
                 }
                 break;
@@ -205,6 +193,10 @@ static void handleParams(Node *params, HashTable *table, FunctionInfo *f) {
 
         Symbol s = {0};
 
+        if (isGlobalScope(table)) {
+            s.isGlobal = 1;
+        }
+
         if (typeNode->label == typeInt)
             s.typ = SYM_INT;
         else if (typeNode->label == typeChar)
@@ -212,24 +204,14 @@ static void handleParams(Node *params, HashTable *table, FunctionInfo *f) {
         else
             s.typ = SYM_NONE;
 
-        if (isGlobalScope(table)) {
-            s.address = globalAddress;
-            s.isGlobal = 1;
-        } else {
-            s.address = table->relativeAddress;
-            s.isGlobal = 0;
-        }
+        s.address = table->relativeAddress;
 
         if (!insert(table, idNode->value.val_str, s)) {
             printf("Erreur ligne %d : paramètre %s déjà déclaré\n",
                    idNode->lineno, idNode->value.val_str);
             semanticErrorCount++;
         } else {
-            if (isGlobalScope(table)) {
-                s.address += sizeofType(s.typ);
-            } else {
-                table->relativeAddress += sizeofType(s.typ);
-            }
+            table->relativeAddress += sizeofType(s.typ);
             // Récupérer type
             f->paramTypes[f->numberParams] = s.typ;
             if (s.typ != SYM_NONE) f->numberParams++;
@@ -318,6 +300,7 @@ static Symbol handleEval(Node *n, HashTable *table) {
                             semanticErrorCount++;
                             return makeIntSymbol(0);
                         }
+                        currentStruct = lookupField(table, fieldSymbol->structName);
                     }
 
                     field = field->nextSibling;
@@ -355,7 +338,7 @@ static Symbol handleEval(Node *n, HashTable *table) {
                 printf("Erreur ligne %d : fonction %s non déclarée\n",
                        functionName->lineno ,functionName->value.val_str);
                 semanticErrorCount++;
-
+            
                 return makeIntSymbol(0);
             }
 
@@ -379,15 +362,16 @@ static Symbol handleEval(Node *n, HashTable *table) {
             
             // Check arguments
             int i = 0;
-            for (Node *arg = arguments->firstChild; arg; arg = arg->nextSibling, i++) {
-                Symbol a = handleEval(arguments->firstChild, table);
+            for (Node *arg = arguments->firstChild; arg; arg = arg->nextSibling) {
+                Symbol a = handleEval(arg, table);
                 if (!castCheck(s->value_funct.paramTypes[i], a.typ)) {
                     printf("Erreur ligne %d : conversion interdite d'argument de la fonction %s\n",
                         functionName->lineno, functionName->value.val_str);
                     semanticErrorCount++;
-                }
 
-                return makeIntSymbol(0);
+                    return makeIntSymbol(0);
+                }
+                i++;
             }
 
             return *s;
@@ -438,7 +422,7 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
             return;
         }
 
-        StructDef *currentStruct = lookupField(n->symTable, baseStruct->symbol.structName);
+        StructDef *currentStruct = lookupField(table, baseStruct->symbol.structName);
         if (!currentStruct) {
             printf("Erreur interne : structure %s introuvable\n",
                 baseStruct->symbol.structName);
@@ -451,6 +435,7 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
 
         while (field) {
             fieldSymbol = lookupEntry(currentStruct, field->value.val_str);
+            printf("VAL : %s\n", field->value.val_str);
             if (!fieldSymbol) {
                 printf("Erreur ligne %d : champ %s inexistant\n",
                     instr->lineno, field->value.val_str);
@@ -466,6 +451,7 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
                     semanticErrorCount++;
                     return;
                 }
+                currentStruct = lookupField(table, fieldSymbol->structName);
             }
 
             lastField = field;

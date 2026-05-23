@@ -1,0 +1,13 @@
+// Test 23 (Inferior or equals comparaison)
+
+int main(void) {
+    int a, b;
+    a = 3;
+    b = 10;
+
+    if (a <= b) {
+        putint(10);
+    }
+
+    return 0;
+}

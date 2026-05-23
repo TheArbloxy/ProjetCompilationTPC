@@ -11,6 +11,9 @@ static const char *ArgumentsRegs[] = {
 static const char *ArgumentsRegs2[] = {
     "edi", "esi", "edx", "ecx", "r8d", "r9d"
 };
+static const char *ArgumentsRegs3[] = {
+    "dil", "sil", "dl", "cl", "r8b", "r9b"
+};
 
 static FieldAccessInfo resolveFieldAccess(Node *node, HashTable *h) {
     /*
@@ -51,6 +54,7 @@ static FieldAccessInfo resolveFieldAccess(Node *node, HashTable *h) {
                 printf("Champ imbriquée de la introuvable\n");
                 return info;
             }
+            currentStruct = lookupField(h, fieldSymbol->structName);
         }
 
         field = field->nextSibling;
@@ -76,15 +80,15 @@ static void genLoadStructField(Node *node, FILE *f, HashTable *h) {
     // Adresse de base
     if (info.entry->symbol.isGlobal) { // s->isGlobal;
         if (info.finalType == SYM_CHAR) {
-            fprintf(f, "    movzx eax, byte [%s + %d]\n", info.entry->key, info.totalOffset);
+            fprintf(f, "    movzx rax, byte [%s + %d]\n", info.entry->key, info.totalOffset);
         } else {
-            fprintf(f, "    mov eax, dword [%s + %d]\n", info.entry->key, info.totalOffset);
+            fprintf(f, "    movsxd rax, dword [%s + %d]\n", info.entry->key, info.totalOffset);
         }
     } else {
         if (info.finalType == SYM_CHAR) {
-            fprintf(f, "    movzx eax, byte [rbp - %d + %d]\n", s->offset, info.totalOffset);
+            fprintf(f, "    movzx rax, byte [rbp - %d + %d]\n", s->offset, info.totalOffset);
         } else {
-            fprintf(f, "    mov eax, dword [rbp - %d + %d]\n", s->offset, info.totalOffset);
+            fprintf(f, "    movsxd rax, dword [rbp - %d + %d]\n", s->offset, info.totalOffset);
         }
     }
 }
@@ -99,9 +103,9 @@ static void genLoadVariable(Node *node, FILE *f, HashTable *h) {
     if (!s) return;
 
     if (s->isGlobal) {
-        fprintf(f, "    mov eax, [%s]\n", node->value.val_str);
+        fprintf(f, "    movsxd rax, [%s]\n", node->value.val_str);
     } else {
-        fprintf(f, "    mov eax, dword [rbp - %d]\n", s->address);
+        fprintf(f, "    movsxd rax, dword [rbp - %d]\n", s->address);
     }
 
     fprintf(f, "    push rax\n");
@@ -130,9 +134,9 @@ static void genStoreStructField(Node *node, FILE *f, HashTable *h) {
         }
     } else {
         if (info.finalType == SYM_CHAR) {
-            fprintf(f, "    mov byte [rbp - %d + %d], sil\n", s->offset, info.totalOffset);
+            fprintf(f, "    mov byte [rbp - %d - %d], sil\n", s->offset, info.totalOffset);
         } else {
-            fprintf(f, "    mov dword [rbp - %d + %d], eax\n", s->offset, info.totalOffset);
+            fprintf(f, "    mov dword [rbp - %d - %d], eax\n", s->offset, info.totalOffset);
         }
     }
 }
@@ -143,7 +147,7 @@ static void genStoreVariable(Node *node, FILE *f, HashTable *h) {
     */
     if (!node) return;
 
-    printf("STORE VARIABLE : %s\n", node->value.val_str ? node->value.val_str : "null");
+    // printf("STORE VARIABLE : %s\n", node->value.val_str ? node->value.val_str : "null");
 
     Symbol *s = lookup(h, node->value.val_str);
     if (!s) return;
@@ -152,9 +156,17 @@ static void genStoreVariable(Node *node, FILE *f, HashTable *h) {
     fprintf(f, "    pop rsi\n");
 
     if (s->isGlobal) {
-        fprintf(f, "    mov [%s], esi\n", node->value.val_str);
+        if (s->typ == SYM_CHAR) {
+            fprintf(f, "    mov [%s], sil\n", node->value.val_str);
+        } else {
+            fprintf(f, "    mov [%s], esi\n", node->value.val_str);
+        }
     } else {
-        fprintf(f, "    mov dword [rbp - %d], esi\n", s->address);
+        if (s->typ == SYM_CHAR) {
+            fprintf(f, "    mov byte [rbp - %d], sil\n", s->address);
+        } else {
+            fprintf(f, "    mov dword [rbp - %d], esi\n", s->address);
+        }
     }
 }
 
@@ -183,6 +195,7 @@ static void genExp(Node *node, FILE *f, HashTable *h) {
             } else {
                 Node *idNode = node->firstChild;
                 genLoadVariable(idNode, f, h);
+                fprintf(f, "    push rax\n");
             }
             break;
         }
@@ -231,6 +244,18 @@ static void genExp(Node *node, FILE *f, HashTable *h) {
                     printf("Operateur inconnu\n");
                     break;
             }
+            break;
+        }
+
+        // Case - et +
+        case unaryminus: {
+            Node *child = node->firstChild;
+            genExp(child, f, h);
+
+            // Changement de signe
+            fprintf(f, "    pop rax\n");
+            fprintf(f, "    neg rax\n");
+            fprintf(f, "    push rax\n");
             break;
         }
 
@@ -448,10 +473,21 @@ static void genFunctCall(Node *node, FILE *f, HashTable *h) {
     if (!functionName) return;
 
     // Générer arguments
+    int argc = numberArgs(args);
+    if (argc > 6) {
+        printf("Fonctions avec plus de 6 arguments non supportés pour l'instant\n");
+        return;
+    }
+    // Évalutation des arguments
     if (args && args->firstChild) {
-        Node *arg = args->firstChild;
-        genExp(arg, f, h);
-        fprintf(f, "    pop rdi\n");
+        for (Node *arg = args->firstChild; arg; arg = arg->nextSibling) {
+            genExp(arg, f, h);
+        }
+    }
+
+    // Les placer dans les registres
+    for (int i = argc - 1; i >= 0; i--) {
+        fprintf(f, "    pop %s\n", ArgumentsRegs[i]);
     }
 
     // Fonctions builtin (putchar et putint)
@@ -514,7 +550,7 @@ static void genReturnVoid(FILE *f) {
     /*
     Generates a void return instruction in NASM.
     */
-    fprintf(f, "    ret\n");
+    genFunctEnd(f);
 }
 
 static void genInstr(Node *node, FILE *f, HashTable *h) {
@@ -625,6 +661,7 @@ static void genGlobalVariables(HashTable* h, FILE *f) {
                 case SYM_INT:
                 case SYM_CHAR:
                     fprintf(f, "    %s: %s 1\n", entry->key, getReserveDirective(s->typ));
+                    break;
                 case SYM_STRUCT:
                     break;
                 default:
@@ -656,12 +693,16 @@ static void genParametreStockage(Node *node, FILE *f, HashTable *h) {
             Symbol *s = lookup(h, ident->value.val_str);
             if (!s) return;
 
-            fprintf(f, "    mov dword [rbp - %d], %s\n", s->address, ArgumentsRegs2[i]);
+            if (s->typ == SYM_CHAR) {
+                fprintf(f, "    mov byte [rbp - %d], %s\n", s->address, ArgumentsRegs3[i]);
+            } else {
+                fprintf(f, "    mov dword [rbp - %d], %s\n", s->address, ArgumentsRegs2[i]);
+            }
         }
 
         i++;
 
-        if (i >= 6) {
+        if (i > 6) {
             printf("Fonctions avec plus de 6 arguments non supportés pour l'instant\n");
             return;
         }
@@ -722,6 +763,8 @@ extern void parcoursArbre(Node *n, FILE *f) {
                 genParametreStockage(params, f, declFonct->symTable);
 
                 genInstr(corps->firstChild->nextSibling, f, declFonct->symTable);
+
+                genFunctEnd(f);
             }
         default:
             break;

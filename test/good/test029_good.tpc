@@ -1,0 +1,22 @@
+// Test 29 (Global mul, div and mod)
+
+int a, b, c, d, e;
+
+int main(void) {
+    a = 10;
+    b = 3;
+
+    c = a * b;
+    d = b / a;
+    e = a % b;
+
+    putint(c);
+    putchar('\n');
+    putint(d);
+    putchar('\n');
+    putint(e);
+    putchar('\n');
+
+    return 0;
+
+}

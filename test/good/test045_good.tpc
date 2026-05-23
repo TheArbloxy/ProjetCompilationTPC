@@ -1,0 +1,42 @@
+// Test 45 (Functions & structures)
+
+struct Point {
+    int x;
+    int y;
+    char name;
+};
+
+struct Point p, p2;
+
+void printPoint(int x, int y, char name) {
+    putchar(name);
+    putchar('\n');
+
+    putchar('x');
+    putchar(':');
+    putint(x);
+    putchar('\n');
+
+    putchar('y');
+    putchar(':');
+    putint(y);
+    putchar('\n');
+}
+
+int main(void) {
+    // P1 
+    p.x = 10;
+    p.y = 5;
+    p.name = 'A';
+
+    // P2
+
+    p2.x = 7;
+    p2.y = 3;
+    p2.name = 'B';
+
+    printPoint(p.x, p.y, p.name);
+    printPoint(p2.x, p2.y, p2.name);
+
+    return 0;
+}

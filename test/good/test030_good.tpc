@@ -1,0 +1,17 @@
+// Test 30
+
+int main(void) {
+    int a, b, c;
+    a = 10;
+    b = 3;
+
+    if ((a + b == 13) || (a - b == 7)) {
+        c = a;
+    } else {
+        c = b;
+    }
+
+    putint(c);
+
+    return 0;
+}

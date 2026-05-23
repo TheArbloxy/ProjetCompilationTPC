@@ -1,9 +1,0 @@
-// Test 3
-
-int global, global2; /* Variable globale */
-char global3; /* Variable globale */
-
-int main(void) {
-    global = 10;
-    return 0;
-}

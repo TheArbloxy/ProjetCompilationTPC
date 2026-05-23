@@ -1,0 +1,12 @@
+// Test 14 (Char function with no arguments)
+
+char f(void) {
+    return 'E';
+}
+
+int main(void) {
+    char c;
+    c = f();
+    putchar(c);
+    return 0;
+}

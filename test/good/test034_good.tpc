@@ -1,0 +1,15 @@
+// Test 34 (Void function with parameters)
+
+void affichage_addition(int a, int b) {
+    putint(a);
+    putchar('+');
+    putint(b);
+    putchar('=');
+    putint(a + b);
+    putchar('\n');
+}
+
+int main(void) {
+    affichage_addition(10, 6);
+    return 0;
+}

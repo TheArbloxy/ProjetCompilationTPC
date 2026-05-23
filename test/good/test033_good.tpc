@@ -1,0 +1,32 @@
+// Test 33 (Char function with parameters again + padding test)
+
+int UNUSED_GLOBAL_INT;
+char UNUSED_GLOBAL_CHAR;
+
+char get_first_letter(int n) {
+    if (n >= 0) {
+        return 'u';
+    }
+    return 't';
+}
+
+int main(void) {
+    int a, b;
+    char v1, c;
+
+    v1 = get_first_letter(7);
+    a = 8;
+    c = 'a';
+    b = 67;
+
+    putint(a);
+    putchar('\n');
+    putchar(v1);
+    putchar('\n');
+    putchar(c);
+    putchar('\n');
+    putint(b);
+    putchar('\n');
+
+    return 0;
+}

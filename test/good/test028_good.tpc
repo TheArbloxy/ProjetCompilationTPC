@@ -1,0 +1,21 @@
+// Test 28 (Mul, div and mod)
+
+int main(void) {
+    int a, b, c, d, e;
+    a = 10;
+    b = 3;
+
+    c = a * b;
+    d = b / a;
+    e = a % b;
+
+    putint(c);
+    putchar('\n');
+    putint(d);
+    putchar('\n');
+    putint(e);
+    putchar('\n');
+
+    return 0;
+
+}

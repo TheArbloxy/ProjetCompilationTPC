@@ -1,0 +1,11 @@
+// Test 3 (Global and local variable)
+
+char a;
+
+int main(void) {
+    int b;
+
+    a = 'c';
+    b = 10;
+    return 0;
+}

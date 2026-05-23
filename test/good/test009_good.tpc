@@ -1,0 +1,7 @@
+// Test 9 (Local lultiple declaration + types)
+
+int main(void) {
+    int a, b;
+    char c, d;
+    return 0;
+}

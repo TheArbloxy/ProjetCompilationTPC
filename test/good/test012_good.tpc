@@ -1,0 +1,10 @@
+// Test 12 (Void function with no arguments)
+
+void f(void) {
+    putint(10);
+}
+
+int main(void) {
+    f();
+    return 0;
+}

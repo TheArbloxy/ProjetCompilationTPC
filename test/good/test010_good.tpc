@@ -1,0 +1,12 @@
+// Test 10 (Multiple affectations)
+
+int main(void) {
+    int a, b;
+    char c, d;
+
+    a = 10;
+    b = 10;
+    c = 'a';
+    d = 'r';
+    return 0;
+}

@@ -1,0 +1,16 @@
+// Test 39 (Function using 6 arguments with different types)
+
+void printShuffle(int a, int b, int c, char d, char e, char f) {
+    putint(a);
+    putint(b);
+    putint(c);
+    putchar(d);
+    putchar(e);
+    putchar(f);
+    putchar('\n');
+}
+
+int main(void) {
+    printShuffle(1, 2, 3, 'a', 'b', 'c');
+    return 0;
+}

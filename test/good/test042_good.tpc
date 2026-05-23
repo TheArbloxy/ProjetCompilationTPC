@@ -1,0 +1,24 @@
+// Test 42 (Internal structure)
+
+int main(void) {
+    struct Point {
+        int x;
+        int y;
+        char c;
+    };
+
+    struct Point p;
+    
+    p.x = 10;
+    p.y = 5;
+    p.c = 'A';
+
+    putint(p.x);
+    putchar('\n');
+    putint(p.y);
+    putchar('\n');
+    putchar(p.c);
+    putchar('\n');
+
+    return 0;
+}

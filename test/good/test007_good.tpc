@@ -1,0 +1,6 @@
+// Test 7 (Empty instruction)
+
+int main(void) {
+    ;
+    return 0;
+}

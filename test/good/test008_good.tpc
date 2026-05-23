@@ -1,0 +1,8 @@
+// Test 8 (Multiple declaration + types)
+
+int a, b;
+char c, d;
+
+int main(void) {
+    return 0;
+}

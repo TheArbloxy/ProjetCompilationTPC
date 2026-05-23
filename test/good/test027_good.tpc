@@ -1,0 +1,22 @@
+// Test 27 (Multiple operations again)
+
+int a, b, c, d, e, f;
+
+int main(void) {
+    a = 10;
+    b = 3;
+
+    c = a + b;
+    d = b - a;
+    e = -c;
+    f = +e;
+
+    if (d < 0) {
+        putint(10);
+    } else {
+        putint(7);
+    }
+
+    return 0;
+
+}

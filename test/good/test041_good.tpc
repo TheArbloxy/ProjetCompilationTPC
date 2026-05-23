@@ -1,0 +1,24 @@
+// Test 41 (Basic structure 2)
+
+struct Point {
+    int x;
+    int y;
+    char c;
+};
+
+struct Point p;
+
+int main(void) {
+    p.x = 10;
+    p.y = 5;
+    p.c = 'A';
+
+    putint(p.x);
+    putchar('\n');
+    putint(p.y);
+    putchar('\n');
+    putchar(p.c);
+    putchar('\n');
+
+    return 0;
+}

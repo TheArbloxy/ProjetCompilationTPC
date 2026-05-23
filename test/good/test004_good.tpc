@@ -1,0 +1,7 @@
+// Test 4 (Char variable)
+
+int main(void) {
+    char _;
+    _ = 'a';
+    return 0;
+}

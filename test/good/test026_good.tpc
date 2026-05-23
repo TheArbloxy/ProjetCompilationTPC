@@ -1,0 +1,23 @@
+// Test 26 (Multiple operations)
+
+int main(void) {
+    int a, b, c, d, e, f;
+    a = 10;
+    b = 3;
+
+    c = a + b;
+    d = b - a;
+    e = -c;
+    f = +e;
+
+    putint(c);
+    putchar('\n');
+    putint(d);
+    putchar('\n');
+    putint(e);
+    putchar('\n');
+    putint(f);
+    putchar('\n');
+
+    return 0;
+}

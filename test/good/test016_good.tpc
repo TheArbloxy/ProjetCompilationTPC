@@ -1,0 +1,29 @@
+// Test 16 (Multiple functions call with different return types)
+
+int x;
+int y;
+
+void f(void) {
+    putchar('T');
+    putchar('\n');
+    return;
+}
+
+int g(void) {
+    return 1;
+}
+
+int h(void) {
+    return 2;
+}
+
+int main(void) {
+    f();
+    x = g();
+    y = h();
+
+    putint(x);
+    putint(y);
+
+    return 0;
+}

@@ -1,0 +1,12 @@
+// Test 15 (Multiple functions call)
+
+int return_three(void) {
+    return 3;
+}
+
+int main(void) {
+    int a;
+    a = return_three() + return_three() + return_three() + return_three();
+    putint(a);
+    return 0;
+}

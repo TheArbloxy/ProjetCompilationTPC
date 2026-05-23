@@ -1,0 +1,21 @@
+// Test 32 (Char function with parameters)
+
+char get_first_letter(int n) {
+    if (n >= 0) {
+        return 'u';
+    }
+    return 't';
+}
+
+int main(void) {
+    char v1, v2;
+    v1 = get_first_letter(10);
+    v2 = get_first_letter(-10);
+
+    putchar(v1);
+    putchar('\n');
+    putchar(v2);
+    putchar('\n');
+
+    return 0;
+}

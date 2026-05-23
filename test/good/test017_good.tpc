@@ -1,0 +1,16 @@
+// Test 17 (Comparaison control)
+
+int main(void) {
+    int a, b, c;
+    a = 10;
+    b = 5;
+    c = a + b;
+
+    if (c <= 15) {
+        putint(1);
+    } else {
+        putint(3);
+    }
+
+    return 0;
+}

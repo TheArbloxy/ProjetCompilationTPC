@@ -1,7 +1,0 @@
-// Test 6
-
-int main(void) {
-    if(p1 > p2) {
-        return 0;
-    }
-}

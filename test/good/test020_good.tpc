@@ -1,0 +1,13 @@
+// Test 20 (Equal comparaison)
+
+int main(void) {
+    int a, b;
+    a = 10;
+    b = 10;
+
+    if (a == b) {
+        putint(1);
+    }
+    
+    return 0;
+}

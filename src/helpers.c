@@ -245,7 +245,7 @@ extern void writeMyPutint(FILE *f) {
                 "   jge .check_zero\n"
                 "   neg rax\n"
 
-                "   ; sauvegarder rax car my_putchar peut modifier les registres volatils"
+                "   ; sauvegarder rax car my_putchar peut modifier les registres volatils\n"
                 "   push rax\n"
                 "   mov dil, '-'\n"
                 "   call my_putchar\n"

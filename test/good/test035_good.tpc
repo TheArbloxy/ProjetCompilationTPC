@@ -1,0 +1,9 @@
+// Test 35 (Void function with no arguments again)
+
+void araujo(void) {
+}
+
+int main(void) {
+    araujo();
+    return 0;
+}

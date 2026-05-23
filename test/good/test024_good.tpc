@@ -1,0 +1,13 @@
+// Test 24 (Superior or equals comparaison)
+
+int main(void) {
+    int a, b;
+    a = 10;
+    b = 3;
+
+    if (a >= b) {
+        putint(10);
+    }
+
+    return 0;
+}

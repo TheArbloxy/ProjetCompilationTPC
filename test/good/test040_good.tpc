@@ -1,0 +1,20 @@
+// Test 40 (Basic structure)
+
+struct Point {
+    int x;
+    int y;
+};
+
+struct Point p;
+
+int main(void) {
+    p.x = 10;
+    p.y = 5;
+
+    putint(p.x);
+    putchar('\n');
+    putint(p.y);
+    putchar('\n');
+
+    return 0;
+}

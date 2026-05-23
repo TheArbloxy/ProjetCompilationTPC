@@ -12,73 +12,27 @@ _start:
     mov rdi, rax
     mov rax, 60
     syscall
-_add:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 16
-    mov dword [rbp - 4], edi
-    mov dword [rbp - 8], esi
-    mov eax, dword [rbp - 4]
-    push rax
-    mov eax, dword [rbp - 8]
-    push rax
-    pop rbx
-    pop rax
-    add rax, rbx
-    push rax
-    pop rax
-    mov rsp, rbp
-    pop rbp
-    ret
-_sub:
-    push rbp
-    mov rbp, rsp
-    sub rsp, 16
-    mov dword [rbp - 4], edi
-    mov dword [rbp - 8], esi
-    mov eax, dword [rbp - 4]
-    push rax
-    mov eax, dword [rbp - 8]
-    push rax
-    pop rbx
-    pop rax
-    sub rax, rbx
-    push rax
-    pop rax
-    mov rsp, rbp
-    pop rbp
-    ret
 _main:
     push rbp
     mov rbp, rsp
-    sub rsp, 16
-    push 1
-    push 2
-    pop rsi
-    pop rdi
-    call _add
-    push rax
-    push 4
-    push 2
-    pop rsi
-    pop rdi
-    call _sub
-    push rax
-    pop rbx
-    pop rax
-    imul rax, rbx
-    push rax
+    sub rsp, 32
+    push 0
     pop rsi
     mov dword [rbp - 4], esi
-    mov eax, dword [rbp - 4]
-    push rax
-    pop rdi
-    call my_putint
-    push 10
-    pop rdi
-    call my_putchar
+    push 0
+    pop rsi
+    mov dword [rbp - 8], esi
+    push 50
+    pop rsi
+    mov dword [rbp - 12], esi
+    push 2
+    pop rsi
+    mov dword [rbp - 16], esi
     push 0
     pop rax
+    mov rsp, rbp
+    pop rbp
+    ret
     mov rsp, rbp
     pop rbp
     ret
@@ -178,7 +132,8 @@ my_putint:
    cmp rax, 0
    jge .check_zero
    neg rax
-   ; sauvegarder rax car my_putchar peut modifier les registres volatils   push rax
+   ; sauvegarder rax car my_putchar peut modifier les registres volatils
+   push rax
    mov dil, '-'
    call my_putchar
    pop rax

@@ -1,0 +1,16 @@
+// Test 19 (Boolean comparaison)
+
+int main(void) {
+    int a, b, c;
+    a = 0;
+    b = 1;
+    c = 1;
+
+    if ((a || b) && c) {
+        putint(10);
+    } else {
+        putint(7);
+    }
+
+    return 0;
+}

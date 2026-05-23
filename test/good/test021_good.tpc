@@ -1,0 +1,13 @@
+// Test 21 (Not boolean)
+
+int main(void) {
+    int a, b;
+    a = 1;
+    b = 1;
+
+    if (!(a != b)) {
+        putint(2);
+    }
+    
+    return 0;
+}
