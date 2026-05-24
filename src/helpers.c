@@ -12,15 +12,15 @@ void printAllTables(Node *n) {
         printf("==========================================================================\n");
         printf("Table - %s\n", n->symTable->functionName ? n->symTable->functionName : "null");
         printf("==========================================================================\n");
-        printf("Variables et fonctions :\n");
+        printf("Variables and functions :\n");
         printVariablesAndFunctions(n->symTable);
         printf("\n");  
 
-        printf("Variables structures :\n");
+        printf("Structures variables :\n");
         printStructureVariables(n->symTable);
         printf("\n");
 
-        printf("Structures déclarées :\n");
+        printf("Declared structures :\n");
         printStructScope(n->symTable->structs);
         printf("\n");  
     }
@@ -60,6 +60,9 @@ extern int castCheck(TypeValue LValue, TypeValue RValue) {
 } 
 
 extern int sizeofType(TypeValue t) {
+    /*
+    Returns the size of a precise type (int or char).
+    */
     switch (t) {
         case SYM_INT:
             return 4;
@@ -71,12 +74,18 @@ extern int sizeofType(TypeValue t) {
 }
 
 extern int isGlobalScope(HashTable* h) {
+    /*
+    Checks if the current hash table has a global scope.
+    */
     return !(h->parent);
 }
 
 // HELPERS NASM HANDLER //
 
 extern const char* getReserveDirective(TypeValue t) {
+    /*
+    Gets the reserve directive of a type (int or char).
+    */
     switch (t) {
         case SYM_INT:
             return "resd"; // 4 bytes
@@ -88,6 +97,9 @@ extern const char* getReserveDirective(TypeValue t) {
 }
 
 extern int isBooleanExp(Node *node) {
+    /*
+    Checks if a node contains at least a boolean expression.
+    */
     if (!node) return 0;
 
     switch (node->label) {
@@ -112,6 +124,9 @@ extern int isBooleanExp(Node *node) {
 }
 
 extern int numberArgs(Node *node) {
+    /*
+    Returns the node's number of siblings (mainly used for functions parameters)
+    */
     if (!node) return 0;
     
     int n = 0;
@@ -120,20 +135,32 @@ extern int numberArgs(Node *node) {
 }
 
 extern int getLocalStackTable(HashTable *h) {
+    /*
+    Gets a local hash table's current stack. 
+    */
     return -(h->relativeAddress);
 }
 
 extern int align16(int n) {
+    /*
+    Gets the alignement 16 of a number.
+    */
     return ((n + 15) / 16) * 16;
 }
 
-// Runtime functions
+// RUNTIME FUNCTIONS HANDLER //
 
 extern void writeRuntimeBss(FILE *f) {
+    /*
+    Writes the runtime functions' temporary variables to a FILE f.
+    */
     fprintf(f, "    __charinput resb 1\n    __buffer resb 1\n    __input resb 1\n");
 } 
 
 extern void writeMyGetchar(FILE *f) {
+    /*
+    Writes the my_getchar NASM function to a FILE f.
+    */
     fprintf(f, "\nmy_getchar: ; read (stdin, __charinput, 1)\n"
                 "   mov rax, 0\n"
                 "   mov rdi, 0\n"
@@ -141,14 +168,17 @@ extern void writeMyGetchar(FILE *f) {
                 "   mov rdx, 1\n"
                 "   syscall\n\n"
 
-                "    ; renvoyer le caractère lu\n"
+                "    ; returns the read char\n"
                 "   movzx rax, byte [__charinput]\n"
                 "   ret\n\n"
     );
 } 
 
 extern void writeMyPutchar(FILE *f) {
-    fprintf(f, "my_putchar: ; stocke le caractère\n"
+    /*
+    Writes the my_putchar NASM function to a FILE f.
+    */
+    fprintf(f, "my_putchar: ; stores the char\n"
                 "   mov [__buffer], dil\n\n"
 
                 "   ; write (stdout, __buffer, 1)\n"
@@ -163,9 +193,12 @@ extern void writeMyPutchar(FILE *f) {
 }
 
 extern void writeMyGetint(FILE *f) {
+    /*
+    Writes the my_getint NASM function to a FILE f.
+    */
     fprintf(f, "\nmy_getint:\n"
                 "   push rbx\n"
-                "   xor rbx, rbx ; résultat = 0\n\n"
+                "   xor rbx, rbx ; result = 0\n\n"
 
                 ".read_first:\n"
                 "   ; read (stdin, __input, 1)\n"
@@ -175,13 +208,13 @@ extern void writeMyGetint(FILE *f) {
                 "   mov rdx, 1\n"
                 "   syscall\n\n"
 
-                "   ; Si read renvoie <= 0, on quitte\n"
+                "   ; If read returns <= 0, we quit\n"
                 "   cmp rax, 0\n"
                 "   jle .error\n\n"
 
                 "   mov al, [__input]\n\n"
 
-                "   ; vérifier chiffre\n"
+                "   ; check digit\n"
                 "   cmp al, '0'\n"
                 "   jl .error\n\n"
 
@@ -192,25 +225,25 @@ extern void writeMyGetint(FILE *f) {
                 "   ; result = result * 10\n"
                 "   imul rbx, rbx, 10\n"
 
-                "   ; convertir ASCII -> entier\n"
+                "   ; convert ASCII -> int\n"
                 "   movzx rax, al\n"
                 "   sub rax, '0'\n"
                 "   add rbx, rax\n\n"
 
-                "   ; lire caractère suivant\n"
+                "   ; read next character\n"
                 "   mov rax, 0\n"
                 "   mov rdi, 0\n"
                 "   mov rsi, __input\n"
                 "   mov rdx, 1\n"
                 "   syscall\n\n"
 
-                "   ; si EOF, on s'arrête"
+                "   ; if EOF, we stop\n"
                 "   cmp rax, 0\n"
                 "   jle .done\n"
 
                 "   mov al, [__input]\n"
 
-                "   ; continuer si chiffre\n\n"
+                "   ; continue if digit\n\n"
                 "   cmp al, '0'\n"
                 "   jl .done\n\n"
 
@@ -232,6 +265,9 @@ extern void writeMyGetint(FILE *f) {
 }
 
 extern void writeMyPutint(FILE *f) {
+    /*
+    Writes the my_putint NASM function to a FILE f.
+    */
     fprintf(f,  "\nmy_putint:\n"
 
                 "   push rbx\n"
@@ -240,12 +276,12 @@ extern void writeMyPutint(FILE *f) {
                 "   mov rax, rdi\n"
                 "   xor r12, r12\n\n"
 
-                "   ; négatif\n"
+                "   ; negative\n"
                 "   cmp rax, 0\n"
                 "   jge .check_zero\n"
                 "   neg rax\n"
 
-                "   ; sauvegarder rax car my_putchar peut modifier les registres volatils\n"
+                "   ; save rax because my_putchar can modify volatile registers\n"
                 "   push rax\n"
                 "   mov dil, '-'\n"
                 "   call my_putchar\n"

@@ -1,0 +1,9 @@
+// Test 29 (Fonction void renvoie une valeur)
+
+void foo(void) {
+    return 1;
+}
+
+int main(void) {
+    return 0;
+}

@@ -1,0 +1,7 @@
+// Test 25 (char avec aucun retour)
+
+char foo(void) {}
+
+int main(void) {
+    return 0;
+}

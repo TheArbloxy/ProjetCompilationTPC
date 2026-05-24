@@ -1,0 +1,9 @@
+// Test 18 (Collision de noms)
+
+int foo;
+
+int foo(void) {}
+
+int main(void) {
+    return 0;
+}

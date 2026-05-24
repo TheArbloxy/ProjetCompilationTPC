@@ -6,6 +6,6 @@ int donneUn10(void) {
 
 int main(void) {
     char c;
-    a = donneUn10();
+    c = donneUn10();
     return 0;
 }

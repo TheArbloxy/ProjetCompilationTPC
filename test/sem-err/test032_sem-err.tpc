@@ -1,0 +1,10 @@
+// Test 32 (Structure imbriquée non déclarée)
+
+struct Point {
+    struct Coordonnees c;
+};
+
+int main(void) {
+    struct Point p;
+    return 0;
+}

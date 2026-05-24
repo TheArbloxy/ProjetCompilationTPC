@@ -5,6 +5,9 @@ static const char *StringFromLabel[] = {
 };
 
 static unsigned int hash(const char* str) {
+    /*
+    Hash function.
+    */
     int k = 612;
     int N = 1008;
     int h = 0;
@@ -23,7 +26,7 @@ void initHashTable(HashTable* h, HashTable* global, const char* name, int starti
     h->functionName = strdup(name);
     h->relativeAddress = startingAdress;
 
-    // Init table variables & fonctions / table variables structures
+    // Init variables & function table / structure variables table
     for (int i = 0; i < TABLE_SIZE; i++) {
         h->table[i].key = NULL;
         h->table[i].state = EMPTY;
@@ -37,31 +40,35 @@ void initHashTable(HashTable* h, HashTable* global, const char* name, int starti
 }
 
 int insert(HashTable *h, const char* key, Symbol symbol) {
+    /*
+    Attempts to insert a variable / function in the hash table.
+    */
     unsigned int index = hash(key);
 
-    // Sondage linéaire
+    // Search
     for (int i = 0; i < TABLE_SIZE; i++) {
         unsigned int pos = (index + i) % TABLE_SIZE;
-        // Place libre
+        // Free place
         if (h->table[pos].state != OCCUPIED) {
             h->table[pos].key = strdup(key);
             h->table[pos].symbol = symbol;
             h->table[pos].state = OCCUPIED;
 
-            // printf("INSERTED : %s\n", h->table[pos].key);
             return 1;
-        // Déjà dans la hash map
+        // Already in the hash map
         } else {
             if (strcmp(h->table[pos].key, key) == 0) {
                 return 0;
             }
         }
     }
-    // Table pleine
     return 0;
 }
 
 static Symbol* search(HashTable *h, const char* key) {
+    /*
+    Search for a variable in the hash table.
+    */
     unsigned int index = hash(key);
     HashEntry entry;
 
@@ -69,7 +76,7 @@ static Symbol* search(HashTable *h, const char* key) {
         unsigned int pos = (index + i) % TABLE_SIZE;
         entry = h->table[pos];
 
-        // SI trouvé
+        // If found
         if (entry.state == OCCUPIED 
             && entry.key != NULL
             && strcmp(entry.key, key) == 0
@@ -81,6 +88,9 @@ static Symbol* search(HashTable *h, const char* key) {
 }
 
 static Symbol* searchFunction(HashTable *h, const char* key) {
+    /*
+    Search for a function in the hash table.
+    */
     unsigned int index = hash(key);
     HashEntry entry;
 
@@ -88,7 +98,7 @@ static Symbol* searchFunction(HashTable *h, const char* key) {
         unsigned int pos = (index + i) % TABLE_SIZE;
         entry = h->table[pos];
 
-        // SI fonction trouvé
+        // If function found
         if (entry.state == OCCUPIED 
             && entry.key != NULL
             && strcmp(entry.key, key) == 0
@@ -101,6 +111,9 @@ static Symbol* searchFunction(HashTable *h, const char* key) {
 }
 
 static HashSEntry* searchStructureVariable(HashTable *h, const char* key) {
+    /*
+    Search for a structure variable in the hash table.
+    */
     unsigned int index = hash(key);
     HashSEntry entry;
 
@@ -108,7 +121,7 @@ static HashSEntry* searchStructureVariable(HashTable *h, const char* key) {
         unsigned int pos = (index + i) % TABLE_SIZE;
         entry = h->tableS[pos];
 
-        // SI fonction trouvé
+        // If structure variable found
         if (entry.state == OCCUPIED 
             && entry.key != NULL
             && strcmp(entry.key, key) == 0) {
@@ -120,6 +133,9 @@ static HashSEntry* searchStructureVariable(HashTable *h, const char* key) {
 }
 
 static StructDef* searchField(HashTable *h, const char* name) {
+    /*
+    Search for a field from a structure in the hash table.
+    */
     if (!h || !name) return NULL;
     unsigned int index = hash(name);
 
@@ -127,7 +143,7 @@ static StructDef* searchField(HashTable *h, const char* name) {
         unsigned int pos = (index + i) % TABLE_SIZE;
         StructDef *entry = &h->structs[pos];
 
-        // SI trouvé
+        // If found
         if (entry->state == OCCUPIED 
             && entry->structName != NULL
             && strcmp(entry->structName, name) == 0){
@@ -138,6 +154,9 @@ static StructDef* searchField(HashTable *h, const char* name) {
 }
 
 Symbol* lookup(HashTable *h, const char* key) {
+    /*
+    Search for a variable from the local, and global table.
+    */
     Symbol *s;
     for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
         s = search(tmp, key);
@@ -149,6 +168,9 @@ Symbol* lookup(HashTable *h, const char* key) {
 }
 
 Symbol* lookupFunction(HashTable *h, const char* key) {
+    /*
+    Search for a function from the local, and global table.
+    */
     Symbol *s;
     for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
         s = searchFunction(tmp, key);
@@ -160,6 +182,9 @@ Symbol* lookupFunction(HashTable *h, const char* key) {
 }
 
 HashSEntry* lookupStructureVariable(HashTable *h, const char* key) {
+    /*
+    Search for a structure variable from the local, and global table.
+    */
     HashSEntry *s;
     for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
         s = searchStructureVariable(tmp, key);
@@ -171,6 +196,9 @@ HashSEntry* lookupStructureVariable(HashTable *h, const char* key) {
 }
 
 StructDef* lookupField(HashTable *h, const char* name) {
+    /*
+    Search for a field from a structure from the local, and global table.
+    */
     StructDef *e;
     for (HashTable *tmp = h; tmp; tmp = tmp->parent) {
         e = searchField(tmp, name);
@@ -182,12 +210,15 @@ StructDef* lookupField(HashTable *h, const char* name) {
 }
 
 int deleteH(HashTable *h, const char* key) {
+    /*
+    Attempts to delete a symbol from the hash tree.
+    */
     unsigned int index = hash(key);
 
     for (int i = 0; i < TABLE_SIZE; i++) {
         unsigned int pos = (index + 1) % TABLE_SIZE;
 
-        // SI trouvé
+        // If found
         if (h->table[pos].state == OCCUPIED && strcmp(h->table[pos].key, key) == 0) {
             free(h->table[pos].key);
             h->table[pos].state = DELETED;
@@ -199,6 +230,9 @@ int deleteH(HashTable *h, const char* key) {
 }
 
 void printVariablesAndFunctions(HashTable *h) {
+    /*
+    Prints all variables and functions in the symbol table.
+    */
     int isEmpty = 1; // Flag checking if the table is empty
     printf("RELATIVE = %-20d\n", h->relativeAddress);
 
@@ -238,6 +272,9 @@ void printVariablesAndFunctions(HashTable *h) {
 }
 
 void printStructureVariables(HashTable *h) {
+    /*
+    Prints all structure variables in the symbol table.
+    */
     int isEmpty = 1; // Flag checking if the table is empty
 
     for (int i = 0; i < TABLE_SIZE; i++) {
@@ -265,6 +302,9 @@ void printStructureVariables(HashTable *h) {
 
 
 void freeHashTable(HashTable *h) {
+    /*
+    Free the symbol table.
+    */
     if (!h) return;
 
     if (h->functionName) {
@@ -272,7 +312,7 @@ void freeHashTable(HashTable *h) {
         h->functionName = NULL;
     }
 
-    // Free table variables & fonctions / table variables structures
+    // Free table variables & functions / table variables structures
     for (size_t i = 0; i < TABLE_SIZE; i++) {
         if (h->table[i].state == OCCUPIED) {
             free(h->table[i].key);
@@ -298,6 +338,9 @@ void freeHashTable(HashTable *h) {
 }
 
 extern void addBuiltIns(HashTable *global) {
+    /*
+    Add built-in functions informations, in the symbol table.
+    */
     Symbol s = {0};
     s.typ = SYM_BUILTIN;
     s.value_funct.numberParams = 1;
@@ -328,6 +371,9 @@ extern void addBuiltIns(HashTable *global) {
 // STRUCTS //
 
 StructDef* lookupStruct(HashTable *table, const char* name) {
+    /*
+    Search for a structure declaration from the local, and global table.
+    */
     unsigned int index = hash(name);
     
     for (HashTable *tmp = table; tmp; tmp = tmp->parent) {
@@ -352,6 +398,9 @@ StructDef* lookupStruct(HashTable *table, const char* name) {
 }
 
 int insertStruct(HashTable *table, StructDef st) {
+    /*
+    Attempts to insert a structure declaration in the hash table.
+    */
     unsigned int index = hash(st.structName);
 
     // Sondage linéaire
@@ -379,6 +428,9 @@ int insertStruct(HashTable *table, StructDef st) {
 // STRUCT VARIABLES
 
 int insertStructVariable(HashTable *h, const char* key, SymbolS symbol) {
+    /*
+    Attempts to insert a structure variable in the hash table.
+    */
     unsigned int index = hash(key);
 
     // Sondage linéaire
@@ -390,7 +442,6 @@ int insertStructVariable(HashTable *h, const char* key, SymbolS symbol) {
             h->tableS[pos].symbol = symbol;
             h->tableS[pos].state = OCCUPIED;
 
-            // printf("INSERTED : %s\n", h->table[pos].key);
             return 1;
         // Déjà dans la hash map
         } else {

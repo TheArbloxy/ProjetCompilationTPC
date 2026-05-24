@@ -1,0 +1,7 @@
+// Test 22 (No main function found)
+
+int a;
+
+int f(void) {
+    return 0;
+}

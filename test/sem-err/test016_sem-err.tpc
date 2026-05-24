@@ -1,0 +1,8 @@
+// Test 16 (Fonction déjà déclarée)
+
+int foo(void) {}
+char foo(void) {}
+
+int main(void) {
+    return 0;
+}

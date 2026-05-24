@@ -1,0 +1,9 @@
+// Test 26 (char avec un retour void)
+
+char foo(void) {
+    return;
+}
+
+int main(void) {
+    return 0;
+}

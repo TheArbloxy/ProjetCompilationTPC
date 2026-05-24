@@ -8,6 +8,9 @@ static const char *StringFromLabel[] = {
 };
 
 static unsigned int hash(const char* str) {
+    /*
+    Hash function.
+    */
     int k = 612;
     int N = 1008;
     int h = 0;
@@ -23,6 +26,9 @@ static unsigned int hash(const char* str) {
 // MAIN //
 
 void initStructScope(StructDef* s, int startingAdress) {
+    /*
+    Initiates a structure scope, containing all structures declaration from a scope.
+    */
     for (int i = 0; i < TABLE_SIZE; i++) {
         s[i].structName = NULL;
         s[i].state = EMPTY;
@@ -36,39 +42,46 @@ void initStructScope(StructDef* s, int startingAdress) {
 }
 
 int insertField(StructDef *def, StructEntry field) {
+    /*
+    Attempts to insert a field StructEntry in a structure definition StructDef.
+    Returns 1 if successful, 0 otherwise (duplicate value). 
+    */
     unsigned int index = hash(field.key);
 
-    // Sondage linéaire
+    // Search
     for (int i = 0; i < TABLE_SIZE; i++) {
         unsigned int pos = (index + i) % TABLE_SIZE;
-        // Place libre
+        // Free place
         if (def->fields[pos].state != OCCUPIED) {
             def->fields[pos] = field;
             def->fields[pos].key = strdup(field.key);
             def->fields[pos].state = OCCUPIED;
 
-            // printf("INSERTED FIELD : %s\n", def->fields[pos].key);
             return 1;
-        // Déjà dans la hash map
+        // Already in the hash map
         } else {
             if (def->fields[pos].key && strcmp(def->fields[pos].key, field.key) == 0) {
                 return 0;
             }
         }
     }
-    // Struct pleine
+    // Full map
     return 0;
 }
 
 StructEntry* lookupEntry(StructDef *s, const char* name) {
+    /*
+    Attempts to search for a field StructEntry in a structure definition StructDef.
+    Returns the field, or NULL if not found.
+    */
     unsigned int index = hash(name);
 
-    // Sondage linéaire
+    // Search
     for (int i = 0; i < TABLE_SIZE; i++) {
         unsigned int pos = (index + i) % TABLE_SIZE;
         StructEntry *entry = &s->fields[pos];
 
-        // Si trouvé
+        // If found
         if (entry->state == OCCUPIED 
             && entry->key != NULL
             && strcmp(entry->key, name) == 0){
@@ -80,6 +93,9 @@ StructEntry* lookupEntry(StructDef *s, const char* name) {
 }
 
 static void printStructTable(StructDef *s) {
+    /*
+    Prints all structure variables from a scope.
+    */
     int isEmpty = 1; // Flag checking if the table is empty
     printf("%s STRUCT %-20s\n", s->isGlobal ? "GLOBAL" : "LOCAL", s->structName);
     printf("TOTAL SIZE = %-20d\n", s->totalSize);
@@ -108,11 +124,14 @@ static void printStructTable(StructDef *s) {
             }
         }
     }
-    if (isEmpty) printf("EMPTY STRUCTURE");
+    if (isEmpty) printf("EMPTY STRUCTURE\n");
     printf("\n");
 }
 
 void printStructScope(StructDef *s) {
+    /*
+    Prints all declared structures from a scope.
+    */
     int isEmpty = 1; // Flag checking if the table is empty
     for (size_t i = 0; i < TABLE_SIZE; i++) {
         if (s[i].state == OCCUPIED) {
@@ -124,9 +143,12 @@ void printStructScope(StructDef *s) {
 }
 
 void freeStructScope(StructDef *s) {
+    /*
+    Free all declared structures from a scope.
+    */
     if (!s) return;
 
-    // Free toutes les structures de la scope
+    // Iterates though all declared structures from a scope.
     for (size_t i = 0; i < TABLE_SIZE; i++) {
         if (s[i].state == OCCUPIED) {
             if (s[i].structName) {
@@ -134,7 +156,7 @@ void freeStructScope(StructDef *s) {
                 s[i].structName = NULL;
             }
 
-            // Free tous les champs d'une structure
+            // Free all the fields of a structure
             for (size_t j = 0; j < TABLE_SIZE; j++) {
                 if (s[i].fields[j].state == OCCUPIED) {
                     free(s[i].fields[j].key);

@@ -1,0 +1,9 @@
+// Test 30 (Assign avec une fonction void)
+
+void foo(void) {}
+
+int main(void) {
+    int a;
+    a = foo();
+    return 0;
+}

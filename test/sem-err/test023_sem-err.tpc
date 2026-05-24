@@ -1,0 +1,5 @@
+// Test 23 (char main)
+
+char main(void) {
+    return 'O';
+}

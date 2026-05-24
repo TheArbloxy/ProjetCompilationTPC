@@ -1,0 +1,10 @@
+// Test 20 (Variable locale et paramètre)
+
+int foo(int a) {
+    int a;
+    return 1;
+}
+
+int main(void) {
+    return 0;
+}

@@ -22,41 +22,42 @@ static FieldAccessInfo resolveFieldAccess(Node *node, HashTable *h) {
     FieldAccessInfo info = {0};
     Node *base = node->firstChild;
 
-    // Variable de base
+    // Gets the base structure from structure declarations
     HashSEntry *baseStruct = lookupStructureVariable(h, base->value.val_str);
     if (!baseStruct) {
-        printf("Structure introuvable\n");
+        printf("Structure not found\n");
         return info;
     }
 
+    // Gets the structure variable
     StructDef *currentStruct = lookupField(h, baseStruct->symbol.structName);
     if (!currentStruct) {
-        printf("Variable de la structure introuvable\n");
+        printf("Structure variable not found\n");
         return info;
     }
 
-    // printf("STRUCT V : %s\n", baseStruct->key);
-
-    // Champs suivants (ex : p.a; ou p.color.r;)
+    // Next field (ex : p.a; ou p.color.r;)
     Node *field = base->nextSibling;
     StructEntry *fieldSymbol = NULL;
 
+    // Check for nested structures
     while (field) {
         fieldSymbol = lookupEntry(currentStruct, field->value.val_str);
         if (!fieldSymbol) {
-            printf("Champ de la structure introuvable\n");
+            printf("Structure field not found\n");
             return info;
         }
 
-        // Si champ intermédiaire (ex : p.color.r) : doit être une structure
+        // If nested field (ex : p.color.r) : must be a structure
         if (field->nextSibling) {
             if (!lookupStruct(h, fieldSymbol->structName)) {
-                printf("Champ imbriquée de la introuvable\n");
+                printf("Nested structure not found\n");
                 return info;
             }
             currentStruct = lookupField(h, fieldSymbol->structName);
         }
 
+        // Update field infos
         field = field->nextSibling;
 
         info.baseSymbol = fieldSymbol;
@@ -64,7 +65,7 @@ static FieldAccessInfo resolveFieldAccess(Node *node, HashTable *h) {
     }
 
     info.entry = baseStruct;
-    info.totalOffset = baseStruct->symbol.address; // Adresse de la variable structure
+    info.totalOffset = baseStruct->symbol.address; // Variable structure's address
     return info;
 }
 
@@ -77,7 +78,7 @@ static void genLoadStructField(Node *node, FILE *f, HashTable *h) {
     StructEntry *s = info.baseSymbol;
     if (!s) return;
 
-    // Adresse de base
+    // Base address
     if (info.entry->symbol.isGlobal) { // s->isGlobal;
         if (info.finalType == SYM_CHAR) {
             fprintf(f, "    movzx rax, byte [%s + %d]\n", info.entry->key, s->offset);
@@ -122,10 +123,10 @@ static void genStoreStructField(Node *node, FILE *f, HashTable *h) {
     StructEntry *s = info.baseSymbol;
     if (!s) return;
 
-    // résultat au sommet de la pile
+    // Result on top of the stack
     fprintf(f, "    pop rsi\n");
 
-    // Adresse de base
+    // Base address
     if (info.entry->symbol.isGlobal) { // s->isGlobal;
         if (info.finalType == SYM_CHAR) {
             fprintf(f, "    mov byte [%s + %d], sil\n", info.entry->key, s->offset);
@@ -147,12 +148,10 @@ static void genStoreVariable(Node *node, FILE *f, HashTable *h) {
     */
     if (!node) return;
 
-    // printf("STORE VARIABLE : %s\n", node->value.val_str ? node->value.val_str : "null");
-
     Symbol *s = lookup(h, node->value.val_str);
     if (!s) return;
 
-    // résultat au sommet de la pile
+    // Result on top of the stack
     fprintf(f, "    pop rsi\n");
 
     if (s->isGlobal) {
@@ -177,21 +176,23 @@ static void genExp(Node *node, FILE *f, HashTable *h) {
     if (!node) return;
 
     switch (node->label) {
-        // constante (int)
+        // const (int)
         case id:
             fprintf(f, "    push %d\n", node->value.val_int);
             break;
 
-        // constante (char)
+        // const (char)
         case character:
             fprintf(f, "    push %d\n", node->value.val_char);
             break;
 
-        // cas des accès à une variable
+        // case of a field access
         case fieldAccess: {
+            // If structure field
             if (numberArgs(node) > 1) {
                 genLoadStructField(node, f, h);
                 fprintf(f, "    push rax\n");
+            // Normal variable or function
             } else {
                 Node *idNode = node->firstChild;
                 genLoadVariable(idNode, f, h);
@@ -200,7 +201,7 @@ static void genExp(Node *node, FILE *f, HashTable *h) {
             break;
         }
 
-        // Opérations binaires
+        // Binary operators
         case Exp:
         case TB:
         case FB:
@@ -214,8 +215,8 @@ static void genExp(Node *node, FILE *f, HashTable *h) {
             genExp(left, f, h);
             genExp(right, f, h);
 
-            fprintf(f, "    pop rbx\n"); // droite
-            fprintf(f, "    pop rax\n"); // gauche
+            fprintf(f, "    pop rbx\n"); // RValue
+            fprintf(f, "    pop rax\n"); // LValue
 
             switch (op->label) {
                 case add: 
@@ -241,7 +242,6 @@ static void genExp(Node *node, FILE *f, HashTable *h) {
                     fprintf(f, "    push rdx\n");
                     break;
                 default:
-                    printf("Operateur inconnu\n");
                     break;
             }
             break;
@@ -252,14 +252,14 @@ static void genExp(Node *node, FILE *f, HashTable *h) {
             Node *child = node->firstChild;
             genExp(child, f, h);
 
-            // Changement de signe
+            // Sign modification
             fprintf(f, "    pop rax\n");
             fprintf(f, "    neg rax\n");
             fprintf(f, "    push rax\n");
             break;
         }
 
-        // Appel fonction
+        // Function call
         case appelFonct: {
             Node *functionName = node->firstChild;
             Node *args = functionName->nextSibling;
@@ -269,26 +269,26 @@ static void genExp(Node *node, FILE *f, HashTable *h) {
             // Arguments
             int argc = numberArgs(args);
             if (argc > 6) {
-                printf("Fonctions avec plus de 6 arguments non supportés pour l'instant\n");
+                printf("Functions with more than 6 arguments not supported\n");
                 return;
             }
 
-            // Évalutation des arguments
+            // Arguments evaluation
             for (Node *arg = args->firstChild; arg; arg = arg->nextSibling) {
                 genExp(arg, f, h);
             }
 
-            // Les placer dans les registres
+            // Put arguments in registers
             for (int i = argc - 1; i >= 0; i--) {
                 fprintf(f, "    pop %s\n", ArgumentsRegs[i]);
             }
 
-            // Fonctions builtin (getchar et getint)
+            // Built-in function (getchar et getint)
             if (strcmp(functionName->value.val_str, "getchar") == 0) {
                 fprintf(f, "    call my_getchar\n");
             } else if (strcmp(functionName->value.val_str, "getint") == 0) {
                 fprintf(f, "    call my_getint\n");
-            // Fonctions normales
+            // Normal function
             } else {
                 fprintf(f, "    call _%s\n", functionName->value.val_str);
             }
@@ -298,7 +298,7 @@ static void genExp(Node *node, FILE *f, HashTable *h) {
         }
 
         default:
-            // fallback
+            // Fallback
             for (Node *child = node->firstChild; child; child = child->nextSibling) {
                 genExp(child, f, h);
             }
@@ -387,11 +387,10 @@ static void genCond(Node *node, FILE *f, HashTable *h, char *trueLabel, char *fa
                     break;
                 }
                 default : {
-                    printf("Opérateur inconnu.\n");
                     return;
                 }
             }
-            // Si faux
+            // If false
             fprintf(f, "    jmp %s\n", falseLabel);
             break;
         }
@@ -423,15 +422,15 @@ static void genBoolExp(Node *node, FILE *f, HashTable *h) {
     sprintf(falseLabel, ".Lbool_false_%d", labelEnd);
     sprintf(endLabel, ".Lbool_end_%d", labelEnd);
 
-    // Test de comparaison
+    // Comparaison test
     genCond(node, f, h, trueLabel, falseLabel);
 
-    // Si true
+    // If true
     fprintf(f, "%s:\n", trueLabel);
     fprintf(f, "    push 1\n");
     fprintf(f, "    jmp %s\n", endLabel);
     
-    // Sinon
+    // Otherwise
     fprintf(f, "%s:\n", falseLabel);
     fprintf(f, "    push 0\n");
     fprintf(f, "%s:\n", endLabel);
@@ -445,11 +444,8 @@ static void genAssign(Node *node, FILE *f, HashTable *h) {
 
     Node *var = node->firstChild;
     Node *expr = var->nextSibling;
-
-    // printf("LABEL VAR : %s\n", var ? strToLabel(var->label) : "null");
-    // printf("LABEL EXPR : %s\n", expr ? strToLabel(expr->label) : "null");
     
-    /* Expression */
+    // Expression
     if (isBooleanExp(expr)) {
         genBoolExp(expr, f, h);
     } else {
@@ -472,30 +468,31 @@ static void genFunctCall(Node *node, FILE *f, HashTable *h) {
 
     if (!functionName) return;
 
-    // Générer arguments
+    // Generates arguments
     int argc = numberArgs(args);
     if (argc > 6) {
-        printf("Fonctions avec plus de 6 arguments non supportés pour l'instant\n");
+        printf("Functions with more than 6 arguments not supported\n");
         return;
     }
-    // Évalutation des arguments
+
+    // Arguments evaluation
     if (args && args->firstChild) {
         for (Node *arg = args->firstChild; arg; arg = arg->nextSibling) {
             genExp(arg, f, h);
         }
     }
 
-    // Les placer dans les registres
+    // Put them in registers
     for (int i = argc - 1; i >= 0; i--) {
         fprintf(f, "    pop %s\n", ArgumentsRegs[i]);
     }
 
-    // Fonctions builtin (putchar et putint)
+    // Built-in functions (putchar et putint)
     if (strcmp(functionName->value.val_str, "putchar") == 0) {
         fprintf(f, "    call my_putchar\n");
     } else if (strcmp(functionName->value.val_str, "putint") == 0) {
         fprintf(f, "    call my_putint\n");
-    // Fonctions normales
+    // Normal functions
     } else {
         fprintf(f, "    call _%s\n", functionName->value.val_str);
     }
@@ -534,7 +531,7 @@ static void genReturn(Node *node, FILE *f, HashTable *h) {
     Node *expr = node->firstChild;
     if (!expr) return;
 
-    /* Expression */
+    // Expression
     if (isBooleanExp(expr)) {
         genBoolExp(expr, f, h);
     } else {
@@ -560,8 +557,6 @@ static void genInstr(Node *node, FILE *f, HashTable *h) {
     if (!node) return;
 
     for (Node *child = node->firstChild; child; child = child->nextSibling) {
-        // printf("LABEL CHILD : %s\n", child ? strToLabel(child->label) : "null");
-
         switch (child->label) {
             case assign: {
                 genAssign(child, f, h);
@@ -583,15 +578,15 @@ static void genInstr(Node *node, FILE *f, HashTable *h) {
                 sprintf(falseLabel, ".Lifelse_false_%d", labelEnd);
                 sprintf(endLabel, ".Lifelse_end_%d", labelEnd);
 
-                // Test de comparaison
+                // Comparaison test
                 genCond(cond, f, h, trueLabel, falseLabel);
 
-                // Si true
+                // If true
                 fprintf(f, "%s:\n", trueLabel);
                 genInstr(thenInstr, f, h);
                 fprintf(f, "    jmp %s\n", endLabel);
                 
-                // Sinon, on fait un jump après
+                // Otherwise, we jump forwards
                 fprintf(f, "%s:\n", falseLabel);
                 genInstr(elseInstr, f, h);
                 fprintf(f, "%s:\n", endLabel);
@@ -609,15 +604,15 @@ static void genInstr(Node *node, FILE *f, HashTable *h) {
                 sprintf(falseLabel, ".Lifelse_false_%d", labelEnd);
                 sprintf(endLabel, ".Lifelse_end_%d", labelEnd);
 
-                // Test de comparaison
+                // Comparaison test
                 genCond(cond, f, h, trueLabel, falseLabel);
 
-                // Si true
+                // If true
                 fprintf(f, "%s:\n", trueLabel);
                 genInstr(thenInstr, f, h);
                 fprintf(f, "    jmp %s\n", endLabel);
                 
-                // Sinon, on fait un jump après
+                // Otherwise, we jump forwards
                 fprintf(f, "%s:\n", falseLabel);
                 genInstr(elseInstr, f, h);
                 fprintf(f, "%s:\n", endLabel);
@@ -634,18 +629,18 @@ static void genInstr(Node *node, FILE *f, HashTable *h) {
                 sprintf(trueLabel, ".Lwhile_true_%d", labelEnd);
                 sprintf(falseLabel, ".Lwhile_end_%d", labelEnd);
 
-                // Point pour reboucler
+                // Place to loop again
                 fprintf(f, "%s:\n", startLabel);
                 genCond(cond, f, h, trueLabel, falseLabel);
 
-                // Si vrai
+                // If true
                 fprintf(f, "%s:\n", trueLabel);
                 genInstr(bodyInstr, f, h);
 
                 // Retest condition
                 fprintf(f, "    jmp %s\n", startLabel);
 
-                // Sortie
+                // Exit
                 fprintf(f, "%s:\n", falseLabel);
                 break;
             }
@@ -673,11 +668,11 @@ static void genGlobalVariables(HashTable* h, FILE *f) {
     writeRuntimeBss(f);
 
     for (int i = 0; i < TABLE_SIZE; i++) {
-        HashEntry *entry = &h->table[i]; // Variables & fonctions
+        HashEntry *entry = &h->table[i]; // Variables & functions
         if (entry->state == OCCUPIED) {
             Symbol *s = &entry->symbol;
 
-            // ignorer fonctions
+            // Ignore functions
             switch (s->typ) {
                 case SYM_BUILTIN:
                 case SYM_FUNCTION:
@@ -695,7 +690,7 @@ static void genGlobalVariables(HashTable* h, FILE *f) {
             }
         }
 
-        HashSEntry *entry2 = &h->tableS[i]; // Variables et structures
+        HashSEntry *entry2 = &h->tableS[i]; // Variables & structures
         if (entry2->state == OCCUPIED) {
             SymbolS *s = &entry2->symbol;
             fprintf(f, "    %s: resb %d\n", entry2->key, s->size);
@@ -712,6 +707,8 @@ static void genParametreStockage(Node *node, FILE *f, HashTable *h) {
     if (!node) return;
 
     int i = 0;
+
+    // Iterate though every parameters
     Node *p = node->firstChild;
     for (Node *c = p->firstChild; c; c = c->nextSibling) {
         Node *ident = c->firstChild->nextSibling;
@@ -729,28 +726,11 @@ static void genParametreStockage(Node *node, FILE *f, HashTable *h) {
         i++;
 
         if (i > 6) {
-            printf("Fonctions avec plus de 6 arguments non supportés pour l'instant\n");
+            printf("Functions with more than 6 parameters not supported\n");
             return;
         }
     }
 
-}
-
-static int isMainFunction(Node *node) {
-    /*
-    Checks if the node is the main function.
-    */
-    Node *header = node->firstChild;
-    if (!header) return 0;
-
-    for (Node *child = header->firstChild; child != NULL; child = child->nextSibling) {
-        if (child->label == id &&
-            child->typ == VALUE_STRING &&
-            strcmp(child->value.val_str, "main") == 0) {
-            return 1;
-        }
-    }
-    return 0;
 }
 
 extern void parcoursArbre(Node *n, FILE *f) {
@@ -759,7 +739,6 @@ extern void parcoursArbre(Node *n, FILE *f) {
     */
 
     if (!n) return;
-    // printf("LABEL N : %s\n", n ? strToLabel(n->label) : "null");
 
     Node *declVars      = n->firstChild;
     Node *declFunctions = declVars->nextSibling;
@@ -785,17 +764,20 @@ extern void parcoursArbre(Node *n, FILE *f) {
                 if (declFonct->symTable) fprintf(f, "_%s:\n", declFonct->symTable->functionName);
                 genFunctBeginning(declFonct, f);
 
-                // Paramètres
+                // Parameters
                 genParametreStockage(params, f, declFonct->symTable);
 
+                // Function corpse
                 genInstr(corps->firstChild->nextSibling, f, declFonct->symTable);
 
+                // Function end
                 genFunctEnd(f);
             }
         default:
             break;
     }
 
+    // Built-in function write
     writeMyGetchar(f);
     writeMyPutchar(f);
     writeMyGetint(f);

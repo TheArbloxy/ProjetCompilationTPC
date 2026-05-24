@@ -1,0 +1,7 @@
+// Test 21 (Variable globales)
+
+int a, a;
+
+int main(void) {
+    return 0;
+}

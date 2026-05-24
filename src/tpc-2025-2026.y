@@ -405,7 +405,7 @@ int main(int argc, char **argv) {
 
         /* If a semantic error is detected */
         if (!buildSymbolTables(node, global)) {
-            printf("Erreur sémantique détectée, arrêt de la compilation.\n");
+            printf("Semantic error detected, compilation stopped.\n");
             deleteTree(node);
             return 2;
         }
@@ -415,7 +415,7 @@ int main(int argc, char **argv) {
 
         FILE* f = fopen("_anonymous.asm", "w");
         if (!f) {
-            printf("Ouverture du fichier _anonymous.asm échouée\n");
+            printf("Opening of file _anonymous.asm failed\n");
             deleteTree(node);
             return 4;
         }

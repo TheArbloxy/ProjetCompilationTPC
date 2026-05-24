@@ -1,0 +1,7 @@
+// Test 27 (int avec aucun retour)
+
+int foo(void) {}
+
+int main(void) {
+    return 0;
+}

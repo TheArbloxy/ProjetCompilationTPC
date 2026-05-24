@@ -1,6 +1,6 @@
 // Test 14 (Structure non déclarée 3)
 
-int main{
+int main(void) {
 	struct compte var;
 	return 0;
 }

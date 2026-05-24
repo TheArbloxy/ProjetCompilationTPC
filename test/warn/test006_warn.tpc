@@ -1,0 +1,12 @@
+// Test 6 (Conversion char -> int 6)
+
+char foo(void) {
+    return 10;
+}
+
+int main(void) {
+    char a;
+    a = foo();
+
+    return 0;
+}
