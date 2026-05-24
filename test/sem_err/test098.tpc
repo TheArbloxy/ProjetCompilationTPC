@@ -1,0 +1,13 @@
+
+struct vitesse {
+    int kmh;
+};
+
+int main(void) {
+    struct vitesse v;
+    int r;
+    v.kmh = 180;
+    v = r;
+    r = 120
+    return 0;
+}

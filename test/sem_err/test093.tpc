@@ -1,0 +1,10 @@
+
+struct annee {
+    int mois;
+};
+
+int main(void) {
+    struct mois m;
+    m = 11;
+    return 0;
+}
