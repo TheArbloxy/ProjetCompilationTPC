@@ -1,0 +1,6 @@
+// Test 14 (Structure non déclarée 3)
+
+int main{
+	struct compte var;
+	return 0;
+}

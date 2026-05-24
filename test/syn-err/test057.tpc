@@ -1,7 +1,0 @@
-// Test 57 
-
-int main(void) {
-    void void;
-    void = void;
-    return void;
-}

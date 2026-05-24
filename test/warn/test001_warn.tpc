@@ -1,0 +1,7 @@
+// Test 1 (Conversion char -> int)
+
+int main(void) {
+    char c;
+    c = 67;
+    return 0;
+}

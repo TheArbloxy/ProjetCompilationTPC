@@ -1,0 +1,6 @@
+// Test 10 (Fonction non déclarée 2)
+
+int main(void) {	
+	fibonacci();
+	return 0;
+}

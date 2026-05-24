@@ -1,8 +1,0 @@
-void fct1(void) {}
-
-int main(void) {
-	int p;
-	p = fct();
-	int r;
-	return 0;
-}

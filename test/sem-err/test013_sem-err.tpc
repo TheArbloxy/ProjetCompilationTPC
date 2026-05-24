@@ -1,0 +1,14 @@
+// Test 13 (Champ d'une structure qui n'existe pas)
+
+struct age {
+    int a;
+};
+
+int main(void) {
+    struct age p;
+    int var;
+    var = p.prenom;
+    var = 0;
+    var = 24;
+    return 0;
+}

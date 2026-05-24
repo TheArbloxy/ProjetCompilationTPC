@@ -1,0 +1,15 @@
+// Test 5 (Conversion char -> int 5)
+
+struct Point {
+    char name;
+};
+
+int donneUn10(void) {
+    return 10;
+}
+
+int main(void) {
+    struct Point p;
+    p.name = donneUn10();
+    return 0;
+}

@@ -1,0 +1,12 @@
+// Test 32
+
+int main(void) {
+    int a;
+    a = 10;
+
+    struct err {
+        int no;
+    };
+    
+    return 0;
+}

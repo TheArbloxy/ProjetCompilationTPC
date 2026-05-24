@@ -1,0 +1,11 @@
+// Test 3 (Conversion char -> int 3)
+
+int donneUn10(void) {
+    return 10;
+}
+
+int main(void) {
+    char c;
+    a = donneUn10();
+    return 0;
+}

@@ -1,7 +1,0 @@
-// Test 62
-
-char a = 'c';
-
-int main(void) {
-    return 0;
-}

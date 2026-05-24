@@ -1,0 +1,11 @@
+// Test 36
+
+struct A {
+    struct B {
+        int b;
+    }
+};
+
+int main(void) {
+    return 0;
+}

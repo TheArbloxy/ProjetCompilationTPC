@@ -1,8 +1,0 @@
-// Test 63
-
-int a, b;
-
-int main(void) {
-    int c = 4;
-    return 0;
-}

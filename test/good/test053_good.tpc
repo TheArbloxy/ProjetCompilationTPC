@@ -1,0 +1,36 @@
+// Test 53 (Conversion int -> char 3)
+
+struct Point {
+    char name;
+    int x;
+    int y;
+};
+
+int main(void) {
+    struct Point p;
+    struct Point p2;
+    
+    p.x = 'X';
+    p.y = 'Y';
+    p.name = 'E';
+
+    p2.x = 'x';
+    p2.y = 'y';
+    p2.name = 'e';
+
+    putint(p.x);
+    putchar('\n');
+    putint(p.y);
+    putchar('\n');
+    putchar(p.name);
+    putchar('\n');
+
+    putint(p2.x);
+    putchar('\n');
+    putint(p2.y);
+    putchar('\n');
+    putchar(p2.name);
+    putchar('\n');
+
+    return 0;
+}

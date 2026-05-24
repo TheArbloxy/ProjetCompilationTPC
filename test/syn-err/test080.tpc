@@ -1,7 +1,0 @@
-// Test 80
-
-struct err {};
-
-int main(void) {
-    return 0;
-}

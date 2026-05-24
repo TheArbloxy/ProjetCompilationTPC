@@ -1,4 +1,0 @@
-int main(void) {
-    var = 0;
-    return 0;
-}

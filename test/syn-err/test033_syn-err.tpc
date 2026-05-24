@@ -1,0 +1,9 @@
+// Test 33
+
+int main(void) {
+    struct err {
+        int no;
+    } = a;
+    
+    return 0;
+}

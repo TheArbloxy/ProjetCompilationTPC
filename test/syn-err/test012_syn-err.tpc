@@ -1,0 +1,7 @@
+// Test 12
+
+char a = 'c';
+
+int main(void) {
+    return 0;
+}

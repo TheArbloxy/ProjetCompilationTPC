@@ -1,0 +1,15 @@
+// Test 5 (Structure déjà déclarée)
+
+struct annee {
+    int mois;
+};
+
+struct annee {
+    int mois;
+};
+
+int main(void) {
+    struct annee m;
+    m.mois = 11;
+    return 0;
+}

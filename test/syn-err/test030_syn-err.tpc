@@ -1,0 +1,7 @@
+// Test 30
+
+struct err {};
+
+int main(void) {
+    return 0;
+}

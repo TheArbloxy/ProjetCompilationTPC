@@ -1,9 +1,0 @@
-int var;
-int var;
-
-int main(void) {
-	int v;
-	var = 9
-	v = 99
-	return 0;
-}

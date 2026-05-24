@@ -1,0 +1,6 @@
+// Test 8 (Structure non déclarée 2)
+
+int main(void) {
+    struct voiture bmw;
+    return 1;
+}

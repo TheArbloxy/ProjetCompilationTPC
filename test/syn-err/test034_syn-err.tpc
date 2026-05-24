@@ -1,0 +1,10 @@
+// Test 34
+
+typedef struct error {
+    int no;
+};
+
+int main(void) {
+    error = a;
+    return 0;
+}

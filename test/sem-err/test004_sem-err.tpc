@@ -1,0 +1,9 @@
+// Test 4 (Fonction non déclarée)
+
+void fct1(void) {}
+
+int main(void) {
+	int p;
+	p = fct();
+	return 0;
+}

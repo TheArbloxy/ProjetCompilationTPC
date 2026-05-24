@@ -1,0 +1,9 @@
+// Test 35
+
+struct {
+    int m, n;
+};
+
+int main(void) {
+    return 0;
+}

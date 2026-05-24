@@ -1,0 +1,7 @@
+// Test 7 
+
+int main(void) {
+    void void;
+    void = void;
+    return void;
+}

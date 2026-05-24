@@ -1,0 +1,14 @@
+// Test 52 (Conversion int -> char 2)
+
+char giveMeALetterM(void) {
+    return 'M';
+}
+
+int main(void) {
+    int a;
+    a = giveMeALetterM();
+
+    putint(a);
+    putchar('\n');
+    return 0;
+}

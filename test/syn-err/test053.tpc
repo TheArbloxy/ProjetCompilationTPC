@@ -1,6 +1,0 @@
-// Test 53
-
-int main(void) {
-    int a = 10;
-    return 0;
-}

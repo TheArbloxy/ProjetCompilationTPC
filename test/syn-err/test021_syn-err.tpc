@@ -1,0 +1,14 @@
+// Test 21
+
+int a;
+
+add(a, b) {
+    return a + b;
+}
+
+
+int main(void) {
+    a = add(10, 5);
+    
+    return 0;
+}

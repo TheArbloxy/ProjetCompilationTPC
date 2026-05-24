@@ -1,0 +1,17 @@
+// Test 51 (Conversion int -> char)
+
+int main(void) {
+    int a, b;
+    char c;
+    a = 'a';
+    b = 'R';
+    c = 'b';
+
+    putint(a);
+    putchar('\n');
+    putint(b);
+    putchar('\n');
+    putchar(c);
+    putchar('\n');
+    return 0;
+}

@@ -1,0 +1,11 @@
+// Test 3 (Variable déjà déclarée)
+
+int var;
+int var;
+
+int main(void) {
+	int v;
+	var = 9;
+	v = 99;
+	return 0;
+}

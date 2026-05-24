@@ -17,6 +17,16 @@ static void handleDeclStruct(Node *n, HashTable *table) {
 
     switch (declStr->label) {
         case declStruct: {
+            // Check si la structure existe déjà dans les structures déjà déclarées
+            StructDef *checkStruct = lookupStruct(table, ident->value.val_str);
+            if (checkStruct) {
+                printf("Erreur ligne %d : structure %s déjà déclarée\n",
+                ident->lineno, ident->value.val_str);
+                semanticErrorCount++;
+                break;
+            }
+
+            // Sinon, on crée la structure
             StructDef def = {0};
             def.structName = strdup(ident->value.val_str);
             if (isGlobalScope(table)) {
@@ -75,7 +85,7 @@ static void handleDeclStruct(Node *n, HashTable *table) {
                             break;
                     }
                     currentOffset += entry.size;
-                    // printf("OFFSET : %d\n", currentOffset);
+                    entry.offset = currentOffset;
                     insertField(&def, entry);
                 }
             } 
@@ -156,14 +166,14 @@ static void handleDeclVars(Node *declVars, HashTable *table) {
                     }
 
                     // Check scope
+                    table->relativeAddress += sizeofType(s.typ);
                     s.address = table->relativeAddress;
 
                     if (!insert(table, id->value.val_str, s)) {
                         printf("Erreur ligne %d : variable %s déjà déclarée\n",
                             id->lineno, id->value.val_str);
                         semanticErrorCount++;
-                    } else {
-                        table->relativeAddress += sizeofType(s.typ);
+                        table->relativeAddress -= sizeofType(s.typ);
                     }
                 }
                 break;
@@ -187,7 +197,6 @@ static void handleParams(Node *params, HashTable *table, FunctionInfo *f) {
     if (!list) return;
 
     for (Node *param = list->firstChild; param; param = param->nextSibling) {
-
         Node *typeNode = param->firstChild;
         Node *idNode   = typeNode->nextSibling;
 
@@ -204,14 +213,15 @@ static void handleParams(Node *params, HashTable *table, FunctionInfo *f) {
         else
             s.typ = SYM_NONE;
 
+        table->relativeAddress += sizeofType(s.typ);
         s.address = table->relativeAddress;
 
         if (!insert(table, idNode->value.val_str, s)) {
             printf("Erreur ligne %d : paramètre %s déjà déclaré\n",
                    idNode->lineno, idNode->value.val_str);
             semanticErrorCount++;
+            table->relativeAddress -= sizeofType(s.typ);
         } else {
-            table->relativeAddress += sizeofType(s.typ);
             // Récupérer type
             f->paramTypes[f->numberParams] = s.typ;
             if (s.typ != SYM_NONE) f->numberParams++;
@@ -476,18 +486,27 @@ static void handleAssign(Node *n, Node *instr, HashTable *table) {
         typeValue = varDest->typ;
     }
 
-    // Vérification type
+    // Vérification type (variable)
     if (!castCheck(typeValue, value.typ)) {
         printf("Avertissement ligne %d : conversion interdite de variable %s (int -> char)\n",
             instr->lineno, lastField->value.val_str);
         return;
     }
     
-    if ((value.typ == SYM_FUNCTION || value.typ == SYM_BUILTIN) && value.value_funct.returnType == SYM_NONE) {
-        printf("Erreur ligne %d : variable %s assigné à un type incompatible 'void'\n",
-            instr->lineno, lastField->value.val_str);
-        semanticErrorCount++;
-        return;
+    // Vérification type (fonction)
+    if ((value.typ == SYM_FUNCTION || value.typ == SYM_BUILTIN)) {
+        // Assign avec un type de retour none
+        if (value.value_funct.returnType == SYM_NONE) {
+            printf("Erreur ligne %d : variable %s assigné à un type incompatible 'void'\n",
+                instr->lineno, lastField->value.val_str);
+            semanticErrorCount++;
+            return;
+        // Assign un char avec un int
+        } else if (value.value_funct.returnType == SYM_INT && typeValue == SYM_CHAR) {
+            printf("Avertissement ligne %d : conversion interdite de variable %s (int -> char)\n",
+                instr->lineno, lastField->value.val_str);
+            return;
+        }
     }
 }
 
@@ -522,7 +541,7 @@ static void handleFunction(Node *n, HashTable *table) {
 
     // Creates local symbol table for the function
     n->symTable = calloc(1, sizeof(HashTable));
-    initHashTable(n->symTable, table, functName->value.val_str, 4);
+    initHashTable(n->symTable, table, functName->value.val_str, 0);
 
     // Check function type
     f.typ = SYM_FUNCTION;

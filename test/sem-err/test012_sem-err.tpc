@@ -1,0 +1,9 @@
+// Test 12 (2 paramètres avec le même nom)
+
+int fct(int i, int i) {
+	return i;
+}
+
+int main(void) {
+	return 0;
+}

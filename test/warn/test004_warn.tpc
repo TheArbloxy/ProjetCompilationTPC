@@ -1,0 +1,11 @@
+// Test 4 (Conversion char -> int 4)
+
+struct Point {
+    char name;
+};
+
+int main(void) {
+    struct Point p;
+    p.name = 56;
+    return 0;
+}

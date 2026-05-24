@@ -1,0 +1,34 @@
+// Test 54 (Test padding dans table symboles)
+
+char giveMeALetterP(void) {
+    return 'P';
+}
+
+int main(void) {
+    int a, b, c;
+    char d;
+    int e;
+    char f, g;
+    int h;
+
+    a = 10;
+    b = 8;
+    c = 'U';
+    d = giveMeALetterP();
+    e = 99;
+    f = 'F';
+    g = 'P';
+    h = 65;
+
+    putint(a);
+    putint(b);
+    putint(c);
+    putchar(d);
+    putint(e);
+    putchar(f);
+    putchar(g);
+    putint(h);
+    putchar('\n');
+    
+    return 0;
+}

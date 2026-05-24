@@ -60,11 +60,11 @@ static FieldAccessInfo resolveFieldAccess(Node *node, HashTable *h) {
         field = field->nextSibling;
 
         info.baseSymbol = fieldSymbol;
-        info.totalOffset += fieldSymbol->offset;
         info.finalType = fieldSymbol->typ;
     }
 
     info.entry = baseStruct;
+    info.totalOffset = baseStruct->symbol.address; // Adresse de la variable structure
     return info;
 }
 
@@ -80,15 +80,15 @@ static void genLoadStructField(Node *node, FILE *f, HashTable *h) {
     // Adresse de base
     if (info.entry->symbol.isGlobal) { // s->isGlobal;
         if (info.finalType == SYM_CHAR) {
-            fprintf(f, "    movzx rax, byte [%s + %d]\n", info.entry->key, info.totalOffset);
+            fprintf(f, "    movzx rax, byte [%s + %d]\n", info.entry->key, s->offset);
         } else {
-            fprintf(f, "    movsxd rax, dword [%s + %d]\n", info.entry->key, info.totalOffset);
+            fprintf(f, "    movsxd rax, dword [%s + %d]\n", info.entry->key, s->offset);
         }
     } else {
         if (info.finalType == SYM_CHAR) {
-            fprintf(f, "    movzx rax, byte [rbp - %d + %d]\n", s->offset, info.totalOffset);
+            fprintf(f, "    movzx rax, byte [rbp - %d]\n", s->offset + info.totalOffset);
         } else {
-            fprintf(f, "    movsxd rax, dword [rbp - %d + %d]\n", s->offset, info.totalOffset);
+            fprintf(f, "    movsxd rax, dword [rbp - %d]\n", s->offset + info.totalOffset);
         }
     }
 }
@@ -128,15 +128,15 @@ static void genStoreStructField(Node *node, FILE *f, HashTable *h) {
     // Adresse de base
     if (info.entry->symbol.isGlobal) { // s->isGlobal;
         if (info.finalType == SYM_CHAR) {
-            fprintf(f, "    mov byte [%s + %d], sil\n", info.entry->key, info.totalOffset);
+            fprintf(f, "    mov byte [%s + %d], sil\n", info.entry->key, s->offset);
         } else {
-            fprintf(f, "    mov dword [%s + %d], esi\n", info.entry->key, info.totalOffset);
+            fprintf(f, "    mov dword [%s + %d], esi\n", info.entry->key, s->offset);
         }
     } else {
         if (info.finalType == SYM_CHAR) {
-            fprintf(f, "    mov byte [rbp - %d - %d], sil\n", s->offset, info.totalOffset);
+            fprintf(f, "    mov byte [rbp - %d], sil\n", s->offset + info.totalOffset);
         } else {
-            fprintf(f, "    mov dword [rbp - %d - %d], eax\n", s->offset, info.totalOffset);
+            fprintf(f, "    mov dword [rbp - %d], esi\n", s->offset + info.totalOffset);
         }
     }
 }

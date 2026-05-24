@@ -1,0 +1,7 @@
+// Test 15
+
+int main(void) {
+    a = 'b';
+    char a;
+    return 0;
+}

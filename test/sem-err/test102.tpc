@@ -1,8 +1,0 @@
-int fct(int i) {
-	return i;
-}
-
-int main(void) {
-fct(0,0);
-return 0;
-}

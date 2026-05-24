@@ -1,0 +1,8 @@
+// Test 13
+
+int a, b;
+
+int main(void) {
+    int c = 4;
+    return 0;
+}

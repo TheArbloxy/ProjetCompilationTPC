@@ -1,0 +1,6 @@
+// Test 9 (Variable non déclarée 2)
+
+int main(void) {
+    var = 0;
+    return 0;
+}
