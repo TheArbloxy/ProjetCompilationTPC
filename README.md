@@ -1,4 +1,4 @@
-# ProjetCompilation_MOUKHEIBER_TRAN
+# ProjetCompilation_TPC
 
 ***
-### Projet de compilation sur le language TPC, en continuité du projet d'analyse syntaxique.
+### Projet de compilation sur le language TPC, un sous-ensemble du langage C.
